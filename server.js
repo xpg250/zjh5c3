@@ -189,6 +189,13 @@ function handleDisconnect(socket) {
         });
     }
 
+    // 修复：同步修正 huoxiPlayerId 索引
+    if (room.huoxiPlayerId === idx) {
+        room.huoxiPlayerId = -1;
+    } else if (room.huoxiPlayerId > idx) {
+        room.huoxiPlayerId--;
+    }
+
     if (room.lastWinner === idx) {
         room.lastWinner = -1;
     } else if (room.lastWinner > idx) {
@@ -267,6 +274,9 @@ function handleStartGame(socket) {
     room.pot = 0;
     room.dealerActedThisRound = false;
 
+    // 修复：重置 huoxiPlayerId，避免上一局残留值影响本局
+    room.huoxiPlayerId = -1;
+
     room.deck = createDeck();
     shuffle(room.deck);
 
@@ -309,15 +319,19 @@ function handleStartGame(socket) {
 }
 
 function collectAnte() {
+    // 修复：增加索引边界安全检查
     if (room.huoxiPlayerId >= 0 && room.huoxiPlayerId < room.players.length) {
         const hp = room.players[room.huoxiPlayerId];
-        const total = INITIAL_BASE_BET * room.players.length;
-        hp.chips -= total;
-        room.pot += total;
-        room.players.forEach(p => { p.bet = INITIAL_BASE_BET; });
-        addLog(hp.name, '支付所有底注' + total + '元', 'huoxi');
+        if (hp) {
+            const total = INITIAL_BASE_BET * room.players.length;
+            hp.chips -= total;
+            room.pot += total;
+            room.players.forEach(p => { p.bet = INITIAL_BASE_BET; });
+            addLog(hp.name, '支付所有底注' + total + '元', 'huoxi');
+        }
         room.huoxiPlayerId = -1;
     } else {
+        room.huoxiPlayerId = -1; // 修复：异常情况也重置
         room.players.forEach(p => {
             p.chips -= INITIAL_BASE_BET;
             p.bet = INITIAL_BASE_BET;
@@ -436,23 +450,18 @@ function handleAction(socket, data) {
             const t = room.players[target];
             if (!t || t.status !== 'active') return socket.emit('error_msg', '目标无效');
 
-            // ===== 关键修复：处理敲没看牌玩家的情况 =====
-
-            // 如果发起者没看牌，需要先确保有handType（从未看牌敲牌时，直接用allCards评估）
+            // 确保发起者有 handType
             if (!p.hasLooked && !p.handType) {
-                // 暗牌敲牌：从5张中自动取前3张评估（或取最优3张）
-                // 这里取前3张作为暗牌手牌
                 p.cards = p.allCards.slice(0, 3);
                 p.handType = evaluateHand(p.cards);
             }
 
-            // 如果目标没看牌，需要先为他评估手牌（但不暴露给任何人）
+            // 确保目标有 handType
             if (!t.hasLooked && !t.handType) {
                 t.cards = t.allCards.slice(0, 3);
                 t.handType = evaluateHand(t.cards);
             }
 
-            // 确保双方handType都存在
             if (!p.handType) return socket.emit('error_msg', '你的手牌异常，请先看牌');
             if (!t.handType) return socket.emit('error_msg', '对方手牌异常');
 
@@ -479,7 +488,6 @@ function handleAction(socket, data) {
                 }
 
                 p.justCompared = true;
-                // 关键修复：敲牌赢了之后也要进入下一回合
                 nextTurn();
                 return;
             } else {
@@ -535,15 +543,27 @@ function nextTurn() {
 function handleEndOfRound(winner) {
     room.phase = 'gameover';
     if (winner) {
+        // 修复：确保赢家有 handType 再计算报喜
+        if (!winner.handType) {
+            if (!winner.cards || winner.cards.length < 3) {
+                winner.cards = winner.allCards ? winner.allCards.slice(0, 3) : [];
+            }
+            if (winner.cards.length === 3) {
+                winner.handType = evaluateHand(winner.cards);
+            }
+        }
+
         winner.chips += room.pot;
         room.lastWinner = room.players.indexOf(winner);
         checkHuoxi(winner);
-        addLog(winner.name, '赢得 ' + room.pot + ' 筹码（' + winner.handType.desc + '）', 'call');
+
+        const desc = winner.handType ? winner.handType.desc : '未知牌型';
+        addLog(winner.name, '赢得 ' + room.pot + ' 筹码（' + desc + '）', 'call');
         io.to(ROOM_ID).emit('game_over', {
             winnerIndex: room.players.indexOf(winner),
             winnerName: winner.name,
             pot: room.pot,
-            handDesc: winner.handType.desc
+            handDesc: desc
         });
     }
     broadcastState();
@@ -556,30 +576,36 @@ function forceShowdown() {
     active.forEach(p => {
         if (!p.handType) {
             if (!p.cards || p.cards.length < 3) {
-                p.cards = p.allCards.slice(0, 3);
+                p.cards = p.allCards ? p.allCards.slice(0, 3) : [];
             }
-            p.handType = evaluateHand(p.cards);
+            if (p.cards.length === 3) {
+                p.handType = evaluateHand(p.cards);
+            }
         }
-        if (!winner || compareHands(p.handType, winner.handType) > 0) winner = p;
+        if (p.handType && (!winner || compareHands(p.handType, winner.handType) > 0)) winner = p;
     });
     if (winner) {
         winner.chips += room.pot;
         room.lastWinner = room.players.indexOf(winner);
         checkHuoxi(winner);
+
+        const desc = winner.handType ? winner.handType.desc : '未知牌型';
         addLog(winner.name, '赢得 ' + room.pot + ' 筹码', 'call');
         io.to(ROOM_ID).emit('game_over', {
             winnerIndex: room.players.indexOf(winner),
             winnerName: winner.name,
             pot: room.pot,
-            handDesc: winner.handType.desc
+            handDesc: desc
         });
     }
     broadcastState();
 }
 
 function checkHuoxi(winner) {
-    if (winner.baoxi && winner.handType &&
-        (winner.handType.type === HAND_TYPES.STRAIGHT_FLUSH || winner.handType.type === HAND_TYPES.THREE_OF_KIND)) {
+    // 安全检查：handType 必须存在
+    if (!winner || !winner.baoxi || !winner.handType) return;
+
+    if (winner.handType.type === HAND_TYPES.STRAIGHT_FLUSH || winner.handType.type === HAND_TYPES.THREE_OF_KIND) {
         const bonus = winner.handType.type === HAND_TYPES.STRAIGHT_FLUSH ? 20 : 30;
         const typeName = winner.handType.type === HAND_TYPES.STRAIGHT_FLUSH ? '顺金' : '豹子';
 
@@ -626,23 +652,19 @@ function getAvailableActions(player) {
         if (active.length === 2) {
             const opp = active.find(p => p.id !== player.id);
             if (opp) {
-                // 修改：无论对方是否看牌，都可以敲牌
                 if (opp.hasLooked && opp.hasSelectedCards) {
                     actions.push('compare');
                 } else if (!opp.hasLooked && opp.headsUpBetCount >= 3) {
                     actions.push('compare');
                 } else if (!opp.hasLooked) {
-                    // 没看牌的对方也可以敲（暗牌敲牌）
                     actions.push('compare');
                 }
             }
         } else {
             if (player.hasLooked && player.hasSelectedCards) {
-                // 已看牌已选牌：可以敲任何其他玩家
                 const hasTarget = active.some(p => p.id !== player.id);
                 if (hasTarget) actions.push('compare');
             } else if (!player.hasLooked) {
-                // 没看牌也可以敲（暗牌敲牌）
                 const hasTarget = active.some(p => p.id !== player.id);
                 if (hasTarget) actions.push('compare');
             }
@@ -660,13 +682,11 @@ function getCompareTargets(player) {
         if (opp) {
             if (opp.hasLooked && opp.hasSelectedCards) return [room.players.indexOf(opp)];
             if (!opp.hasLooked && opp.headsUpBetCount >= 3) return [room.players.indexOf(opp)];
-            // 修改：没看牌也可以敲
             if (!opp.hasLooked) return [room.players.indexOf(opp)];
         }
         return [];
     }
 
-    // 修改：已看牌已选牌 或 没看牌，都可以敲其他活跃玩家
     if (player.hasLooked && !player.hasSelectedCards) return [];
     return active.filter(p => p.id !== player.id).map(p => room.players.indexOf(p));
 }
