@@ -1031,12 +1031,15 @@
             var canCall    = available.indexOf('call') !== -1;
             var canRaise   = available.indexOf('raise') !== -1;
             var canCompare = available.indexOf('compare') !== -1;
+            // 新增：检查是否需要显示“选牌”按钮
+            var canSelectCardsUI = available.indexOf('select_cards_ui') !== -1;
 
             var foldReason = '';
             var lookReason = '';
             var callReason = '';
             var raiseReason = '';
             var compareReason = '';
+            var selectCardsReason = '';
 
             if (cl) {
                 if (!isCompareLockParticipant) {
@@ -1061,8 +1064,10 @@
                     callReason = '等待回合';
                     raiseReason = '等待回合';
                     compareReason = '等待回合';
+                    selectCardsReason = '等待回合';
                 } else {
                     if (hasLooked && !hasSelectedCards) {
+                        // 已看牌未选牌时，禁用其他操作，只允许选牌
                         callReason = '请先选牌';
                         raiseReason = '请先选牌';
                         compareReason = '请先选牌';
@@ -1081,6 +1086,21 @@
                 { label: '敲牌 ' + callAmount, cls: 'btn-compare', enabled: isMyTurn && canCompare, reason: compareReason }
             ];
 
+            // 如果需要显示“选牌”按钮（已看牌未选牌），则替换或添加
+            if (canSelectCardsUI) {
+                // 移除其他可能冲突的按钮理由
+                buttons = [
+                    { label: '弃牌', cls: 'btn-fold', enabled: isMyTurn, reason: '' },
+                    { label: '选择手牌', cls: 'btn-look', enabled: true, reason: '请从5张牌中选择3张' } // 复用看牌按钮样式
+                ];
+                // 修改点击行为：点击“选择手牌”触发显示选牌界面
+                buttons[1].customAction = function() {
+                    if (myPlayer && myPlayer.allCards && myPlayer.allCards.length === 5) {
+                        showSelectCardsUI(myPlayer.allCards, false);
+                    }
+                };
+            }
+
             buttons.forEach(function(cfg) {
                 var wrapper = document.createElement('div');
                 wrapper.className = 'action-btn-wrapper';
@@ -1091,7 +1111,9 @@
                 btn.disabled = !cfg.enabled;
 
                 if (cfg.enabled) {
-                    if (cfg.cls === 'btn-compare') {
+                    if (cfg.customAction) {
+                        btn.onclick = cfg.customAction;
+                    } else if (cfg.cls === 'btn-compare') {
                         if (compareTargets.length > 1) {
                             btn.onclick = function() { showCompareModal(compareTargets); };
                         } else if (compareTargets.length === 1) {
