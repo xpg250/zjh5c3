@@ -85,8 +85,7 @@ function createRoom() {
         round: 0, phase: 'waiting',
         lastWinner: -1, huoxiPlayerId: -1,
         hostId: null,
-        dealerActedThisRound: false,
-        pendingCompare: null // 新增：存储待处理的比牌请求 {initiatorIndex, targetIndex, cost}
+        dealerActedThisRound: false
     };
 }
 
@@ -219,18 +218,6 @@ function handleDisconnect(socket) {
         room.currentPlayerIndex--;
     }
 
-    // 新增：如果断线玩家是待处理比牌的发起者或目标，则取消比牌
-    if (room.pendingCompare) {
-        if (room.pendingCompare.initiatorIndex === idx || room.pendingCompare.targetIndex === idx) {
-            room.pendingCompare = null;
-            addLog('系统', '因玩家离线，待处理的比牌已取消', 'default');
-        } else {
-            // 调整索引
-            if (room.pendingCompare.initiatorIndex > idx) room.pendingCompare.initiatorIndex--;
-            if (room.pendingCompare.targetIndex > idx) room.pendingCompare.targetIndex--;
-        }
-    }
-
     if (room.phase === 'playing') {
         const activePlayers = getActivePlayers();
         if (activePlayers.length <= 1) {
@@ -286,7 +273,6 @@ function handleStartGame(socket) {
     room.baseBet = INITIAL_BASE_BET;
     room.pot = 0;
     room.dealerActedThisRound = false;
-    room.pendingCompare = null; // 新增：开始新一局时清空待处理比牌
 
     // 修复：重置 huoxiPlayerId，避免上一局残留值影响本局
     room.huoxiPlayerId = -1;
@@ -360,11 +346,6 @@ function handleAction(socket, data) {
     if (!cp || cp.id !== socket.id) return socket.emit('error_msg', '不是你的回合');
     if (cp.status !== 'active') return socket.emit('error_msg', '你当前无法操作');
 
-    // 如果有正在进行的待处理比牌，且当前玩家不是该比牌的目标，则禁止操作
-    if (room.pendingCompare && room.pendingCompare.targetIndex !== room.currentPlayerIndex) {
-        return socket.emit('error_msg', '请等待比牌流程完成');
-    }
-
     if (room.currentPlayerIndex === room.dealerIndex) {
         room.dealerActedThisRound = true;
     }
@@ -374,14 +355,6 @@ function handleAction(socket, data) {
 
     switch (action) {
         case 'fold':
-            // 如果有待处理比牌，且弃牌者是发起者或目标，则取消比牌
-            if (room.pendingCompare) {
-                if (room.pendingCompare.initiatorIndex === room.currentPlayerIndex ||
-                    room.pendingCompare.targetIndex === room.currentPlayerIndex) {
-                    room.pendingCompare = null;
-                    addLog('系统', '因玩家弃牌，待处理的比牌已取消', 'default');
-                }
-            }
             p.status = 'folded';
             p.firstRoundAction = false;
             p.justCompared = false;
@@ -423,22 +396,6 @@ function handleAction(socket, data) {
             p.handType = evaluateHand(p.cards);
             p.hasSelectedCards = true;
             addLog(p.name, '选择了3张牌', 'select');
-
-            // 新增：检查是否有待处理的比牌，且当前玩家是该比牌的目标
-            if (room.pendingCompare && room.pendingCompare.targetIndex === room.currentPlayerIndex) {
-                const initiator = room.players[room.pendingCompare.initiatorIndex];
-                const targetPlayer = p; // 当前玩家就是目标
-                if (initiator && initiator.status === 'active' && targetPlayer.status === 'active') {
-                    // 执行比牌
-                    executeCompare(initiator, room.pendingCompare.initiatorIndex, targetPlayer, room.pendingCompare.targetIndex, room.pendingCompare.cost);
-                    room.pendingCompare = null;
-                    return; // executeCompare 内部会处理后续流程（nextTurn 或 endOfRound）
-                } else {
-                    // 发起者或目标已无效，取消比牌
-                    room.pendingCompare = null;
-                    addLog('系统', '比牌条件已失效，操作取消', 'default');
-                }
-            }
             broadcastState();
             return;
 
@@ -493,37 +450,55 @@ function handleAction(socket, data) {
             const t = room.players[target];
             if (!t || t.status !== 'active') return socket.emit('error_msg', '目标无效');
 
+            // ==================== 核心修复开始 ====================
+            // 确保发起者已完成选牌（有handType）
+            if (!p.hasSelectedCards) {
+                return socket.emit('error_msg', '请先完成选牌再敲牌');
+            }
+            // 确保目标玩家已完成选牌（有handType）
+            if (!t.hasSelectedCards) {
+                return socket.emit('error_msg', '对方尚未完成选牌，无法敲牌');
+            }
+            // 现在双方都有有效的 handType
+            if (!p.handType || !t.handType) {
+                return socket.emit('error_msg', '手牌数据异常，无法比较');
+            }
+            // ==================== 核心修复结束 ====================
+
             const cost = getCompareCost(p);
             p.chips -= cost;
             p.bet += cost;
             room.pot += cost;
 
-            // 修改：检查目标是否已选牌
-            if (t.hasLooked && !t.hasSelectedCards) {
-                // 目标已看牌但未选牌，这是非法状态，但作为防御性编程，提示错误
-                return socket.emit('error_msg', '对方正在选牌，请稍候');
-            }
+            const result = compareHands(p.handType, t.handType);
+            addLog(p.name, '向 ' + t.name + ' 敲牌', 'compare');
 
-            if (!t.hasSelectedCards) {
-                // 目标还未看牌/选牌，需要先触发其选牌流程
-                // 设置待处理比牌状态
-                room.pendingCompare = {
-                    initiatorIndex: room.currentPlayerIndex,
-                    targetIndex: target,
-                    cost: cost // 记录已扣除的费用
-                };
-                addLog(p.name, '向 ' + t.name + ' 发起敲牌（等待对方选牌）', 'compare');
-                // 给目标玩家发送 its_your_cards_to_select 事件，触发其选牌UI
-                io.to(t.id).emit('its_your_cards_to_select', { cards: t.allCards });
-                // 广播状态更新，让所有人知道进入等待状态
-                broadcastState();
-                // 注意：这里不调用 nextTurn()，因为流程未完成
+            if (result > 0) {
+                t.status = 'folded';
+                addLog(p.name, '敲牌赢了 ' + t.name, 'compare');
+                io.to(ROOM_ID).emit('compare_result', {
+                    winner: room.currentPlayerIndex,
+                    loser: target
+                });
+
+                const active = getActivePlayers();
+                if (active.length <= 1) {
+                    handleEndOfRound(active[0] || null);
+                    return;
+                }
+
+                p.justCompared = true;
+                nextTurn();
                 return;
             } else {
-                // 双方都已选牌，直接执行比牌
-                executeCompare(p, room.currentPlayerIndex, t, target, cost);
-                return; // executeCompare 内部会处理后续流程
+                p.status = 'folded';
+                addLog(p.name, '敲牌输给了 ' + t.name, 'compare');
+                io.to(ROOM_ID).emit('compare_result', {
+                    winner: target,
+                    loser: room.currentPlayerIndex
+                });
             }
+            break;
         }
 
         default: return;
@@ -536,53 +511,6 @@ function handleAction(socket, data) {
     }
 
     nextTurn();
-}
-
-// 新增：执行比牌逻辑的函数
-function executeCompare(initiator, initiatorIndex, target, targetIndex, cost) {
-    // 确保双方 handType 已计算（应该都有，因为都选过牌了）
-    if (!initiator.handType) {
-        initiator.cards = initiator.allCards.slice(0, 3);
-        initiator.handType = evaluateHand(initiator.cards);
-    }
-    if (!target.handType) {
-        target.cards = target.allCards.slice(0, 3);
-        target.handType = evaluateHand(target.cards);
-    }
-
-    const result = compareHands(initiator.handType, target.handType);
-    addLog(initiator.name, '向 ' + target.name + ' 敲牌', 'compare');
-
-    if (result > 0) {
-        target.status = 'folded';
-        addLog(initiator.name, '敲牌赢了 ' + target.name, 'compare');
-        io.to(ROOM_ID).emit('compare_result', {
-            winner: initiatorIndex,
-            loser: targetIndex
-        });
-
-        const active = getActivePlayers();
-        if (active.length <= 1) {
-            handleEndOfRound(active[0] || null);
-            return;
-        }
-
-        initiator.justCompared = true;
-        nextTurn();
-    } else {
-        initiator.status = 'folded';
-        addLog(initiator.name, '敲牌输给了 ' + target.name, 'compare');
-        io.to(ROOM_ID).emit('compare_result', {
-            winner: targetIndex,
-            loser: initiatorIndex
-        });
-        const active = getActivePlayers();
-        if (active.length <= 1) {
-            handleEndOfRound(active[0] || null);
-            return;
-        }
-        nextTurn();
-    }
 }
 
 function getCompareCost(player) {
@@ -614,7 +542,6 @@ function nextTurn() {
 
 function handleEndOfRound(winner) {
     room.phase = 'gameover';
-    room.pendingCompare = null; // 游戏结束，清空待处理比牌
     if (winner) {
         // 修复：确保赢家有 handType 再计算报喜
         if (!winner.handType) {
@@ -644,7 +571,6 @@ function handleEndOfRound(winner) {
 
 function forceShowdown() {
     room.phase = 'gameover';
-    room.pendingCompare = null; // 游戏结束，清空待处理比牌
     const active = getActivePlayers();
     let winner = null;
     active.forEach(p => {
@@ -709,23 +635,12 @@ function addLog(name, action, type) {
 function getAvailableActions(player) {
     if (!player || player.status !== 'active') return [];
 
-    // 如果有正在进行的待处理比牌，且当前玩家不是比牌目标，则返回空（禁止操作）
-    if (room.pendingCompare && room.pendingCompare.targetIndex !== room.players.indexOf(player)) {
-        return [];
-    }
-    // 如果当前玩家是比牌目标，则只允许看牌和选牌（如果还未操作）
-    if (room.pendingCompare && room.pendingCompare.targetIndex === room.players.indexOf(player)) {
-        if (!player.hasLooked) return ['look'];
-        if (player.hasLooked && !player.hasSelectedCards) return []; // 选牌通过 select_cards 动作完成，这里返回空
-        // 如果已经选牌，理论上比牌会立即执行，不应该停留在此状态
-        return [];
-    }
-
     if (player.justCompared) {
         return ['fold', 'call'];
     }
 
     const actions = ['fold'];
+    // 如果已看牌但未选牌，只允许选牌操作（由前端控制，这里返回空数组表示无其他可用操作）
     if (player.hasLooked && !player.hasSelectedCards) {
         return [];
     }
@@ -735,48 +650,35 @@ function getAvailableActions(player) {
 
     const active = getActivePlayers();
     if (room.round >= 2) {
-        if (active.length === 2) {
-            const opp = active.find(p => p.id !== player.id);
-            if (opp) {
-                if (opp.hasLooked && opp.hasSelectedCards) {
-                    actions.push('compare');
-                } else if (!opp.hasLooked && opp.headsUpBetCount >= 3) {
-                    actions.push('compare');
-                } else if (!opp.hasLooked) {
-                    actions.push('compare');
-                }
-            }
-        } else {
-            if (player.hasLooked && player.hasSelectedCards) {
-                const hasTarget = active.some(p => p.id !== player.id);
-                if (hasTarget) actions.push('compare');
-            } else if (!player.hasLooked) {
-                const hasTarget = active.some(p => p.id !== player.id);
-                if (hasTarget) actions.push('compare');
-            }
+        // 敲牌条件：双方都已选牌，或者都未看牌（暗牌敲牌）
+        if (player.hasSelectedCards) {
+            // 已选牌：只能敲已选牌的玩家
+            const hasTarget = active.some(p => p.id !== player.id && p.hasSelectedCards);
+            if (hasTarget) actions.push('compare');
+        } else if (!player.hasLooked) {
+            // 未看牌（暗牌）：可以敲任何其他活跃玩家（无论对方是否看牌）
+            const hasTarget = active.some(p => p.id !== player.id);
+            if (hasTarget) actions.push('compare');
         }
+        // 如果已看牌但未选牌，上面已返回空，不会执行到这里
     }
     return actions;
 }
 
 function getCompareTargets(player) {
     if (room.round < 2) return [];
-    // 如果有正在进行的待处理比牌，不显示可比牌目标
-    if (room.pendingCompare) return [];
     const active = getActivePlayers();
 
-    if (active.length === 2) {
-        const opp = active.find(p => p.id !== player.id);
-        if (opp) {
-            if (opp.hasLooked && opp.hasSelectedCards) return [room.players.indexOf(opp)];
-            if (!opp.hasLooked && opp.headsUpBetCount >= 3) return [room.players.indexOf(opp)];
-            if (!opp.hasLooked) return [room.players.indexOf(opp)];
-        }
-        return [];
+    // 根据玩家状态返回可敲牌目标
+    if (player.hasSelectedCards) {
+        // 已选牌：只能选择其他已选牌的玩家
+        return active.filter(p => p.id !== player.id && p.hasSelectedCards).map(p => room.players.indexOf(p));
+    } else if (!player.hasLooked) {
+        // 未看牌（暗牌）：可以选择任何其他活跃玩家
+        return active.filter(p => p.id !== player.id).map(p => room.players.indexOf(p));
     }
-
-    if (player.hasLooked && !player.hasSelectedCards) return [];
-    return active.filter(p => p.id !== player.id).map(p => room.players.indexOf(p));
+    // 已看牌但未选牌：无可用目标
+    return [];
 }
 
 function broadcastState() {
@@ -806,6 +708,7 @@ function buildStateForPlayer(viewer) {
             let showAllCards = false;
 
             if (i === viewerIndex) {
+                // 自己：如果已看牌但未选牌，显示全部5张牌；如果已选牌，显示选择的3张
                 if (p.hasLooked && !p.hasSelectedCards) {
                     showCards = p.allCards;
                     showAllCards = true;
@@ -813,6 +716,7 @@ function buildStateForPlayer(viewer) {
                     showCards = p.cards;
                 }
             } else {
+                // 他人：游戏结束时显示手牌和弃牌；游戏中只显示已选牌玩家的弃牌
                 if (room.phase === 'gameover') {
                     showCards = p.cards;
                     showDiscarded = p.discardedCards;
@@ -840,13 +744,7 @@ function buildStateForPlayer(viewer) {
             : [],
         compareTargets: (room.currentPlayerIndex === viewerIndex && viewer.status === 'active')
             ? getCompareTargets(viewer)
-            : [],
-        // 新增：告诉前端当前是否有待处理的比牌（用于UI提示）
-        pendingCompare: room.pendingCompare ? {
-            initiatorName: room.players[room.pendingCompare.initiatorIndex]?.name,
-            targetName: room.players[room.pendingCompare.targetIndex]?.name,
-            isTarget: room.pendingCompare.targetIndex === viewerIndex
-        } : null
+            : []
     };
 }
 
