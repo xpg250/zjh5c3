@@ -141,14 +141,14 @@ function handleJoin(socket, { name }) {
         id: socket.id,
         name: (name || '玩家').substring(0, 8),
         chips: 0,
-        cards: [], // 最终选择的3张牌
-        allCards: [], // 开局发的5张牌
-        discardedCards: [], // 未选择的2张牌
+        cards: [],
+        allCards: [],
+        discardedCards: [],
         status: initialStatus,
         bet: 0,
         handType: null,
         hasLooked: false,
-        hasSelectedCards: false, // 是否已选择3张牌
+        hasSelectedCards: false,
         baoxi: false,
         firstRoundAction: true,
         headsUpBetCount: 0
@@ -180,19 +180,15 @@ function handleDisconnect(socket) {
         return;
     }
 
-    // 【关键修复】如果离开的是房主，立即广播房主变更
     if (wasHost) {
         room.hostId = room.players[0].id;
         console.log('[房主转移] ' + room.players[0].name);
-
-        // 立即广播房主变更事件
         io.to(ROOM_ID).emit('host_changed', {
             newHostId: room.hostId,
             newHostName: room.players[0].name
         });
     }
 
-    // 更新索引
     if (room.lastWinner === idx) {
         room.lastWinner = -1;
     } else if (room.lastWinner > idx) {
@@ -223,7 +219,6 @@ function handleDisconnect(socket) {
             broadcastState();
         }
     } else {
-        // 【关键修复】无论什么阶段，都广播状态更新
         broadcastState();
         broadcastWaiting();
     }
@@ -288,10 +283,8 @@ function handleStartGame(socket) {
         p.headsUpBetCount = 0;
     });
 
-    // 修改：每人发5张牌
     room.players.forEach(p => {
         p.allCards = [room.deck.pop(), room.deck.pop(), room.deck.pop(), room.deck.pop(), room.deck.pop()];
-        // 初始时，cards和discardedCards为空，玩家看牌后选择
         p.cards = [];
         p.discardedCards = [];
         p.handType = null;
@@ -360,25 +353,21 @@ function handleAction(socket, data) {
             io.to(ROOM_ID).emit('player_looked', {
                 playerIndex: room.currentPlayerIndex
             });
-            // 修改：发送5张牌给玩家，让其选择
             socket.emit('your_cards', { cards: p.allCards });
             broadcastState();
             return;
 
-        // 新增：选择3张牌的动作
         case 'select_cards':
             if (!p.hasLooked) return socket.emit('error_msg', '请先看牌');
             if (p.hasSelectedCards) return socket.emit('error_msg', '你已经选过牌了');
             if (!selectedIndices || selectedIndices.length !== 3) {
                 return socket.emit('error_msg', '请选择3张牌');
             }
-            // 验证索引有效性
             for (const idx of selectedIndices) {
                 if (idx < 0 || idx >= 5) {
                     return socket.emit('error_msg', '选择的牌无效');
                 }
             }
-            // 从allCards中提取选中的3张和未选中的2张
             const selectedCards = [];
             const discardedCards = [];
             for (let i = 0; i < 5; i++) {
@@ -397,7 +386,6 @@ function handleAction(socket, data) {
             return;
 
         case 'call': {
-            // 修改：如果还没选牌，不能跟注
             if (p.hasLooked && !p.hasSelectedCards) {
                 return socket.emit('error_msg', '请先选择3张牌');
             }
@@ -406,7 +394,7 @@ function handleAction(socket, data) {
             p.bet += amt;
             room.pot += amt;
             if (getActivePlayers().length === 2) p.headsUpBetCount++;
-        
+
             if (room.round === 1 && !p.hasLooked && p.firstRoundAction) {
                 p.baoxi = true;
                 addLog(p.name, '跟注 ' + amt + '（报喜！）', 'baoxi');
@@ -414,13 +402,11 @@ function handleAction(socket, data) {
                 addLog(p.name, '跟注 ' + amt, 'call');
             }
             p.firstRoundAction = false;
-        
             p.justCompared = false;
             break;
         }
 
         case 'raise': {
-            // 修改：如果还没选牌，不能加注
             if (p.hasLooked && !p.hasSelectedCards) {
                 return socket.emit('error_msg', '请先选择3张牌');
             }
@@ -443,26 +429,41 @@ function handleAction(socket, data) {
         }
 
         case 'compare': {
-            // 修改：如果还没选牌，不能敲牌
             if (p.hasLooked && !p.hasSelectedCards) {
                 return socket.emit('error_msg', '请先选择3张牌');
             }
             if (target === undefined || target === room.currentPlayerIndex) return;
             const t = room.players[target];
             if (!t || t.status !== 'active') return socket.emit('error_msg', '目标无效');
-            // 修改：检查目标玩家是否已选牌
-            if (t.hasLooked && !t.hasSelectedCards) {
-                return socket.emit('error_msg', '对方还未选牌');
+
+            // ===== 关键修复：处理敲没看牌玩家的情况 =====
+
+            // 如果发起者没看牌，需要先确保有handType（从未看牌敲牌时，直接用allCards评估）
+            if (!p.hasLooked && !p.handType) {
+                // 暗牌敲牌：从5张中自动取前3张评估（或取最优3张）
+                // 这里取前3张作为暗牌手牌
+                p.cards = p.allCards.slice(0, 3);
+                p.handType = evaluateHand(p.cards);
             }
-        
+
+            // 如果目标没看牌，需要先为他评估手牌（但不暴露给任何人）
+            if (!t.hasLooked && !t.handType) {
+                t.cards = t.allCards.slice(0, 3);
+                t.handType = evaluateHand(t.cards);
+            }
+
+            // 确保双方handType都存在
+            if (!p.handType) return socket.emit('error_msg', '你的手牌异常，请先看牌');
+            if (!t.handType) return socket.emit('error_msg', '对方手牌异常');
+
             const cost = getCompareCost(p);
             p.chips -= cost;
             p.bet += cost;
             room.pot += cost;
-        
+
             const result = compareHands(p.handType, t.handType);
             addLog(p.name, '向 ' + t.name + ' 敲牌', 'compare');
-        
+
             if (result > 0) {
                 t.status = 'folded';
                 addLog(p.name, '敲牌赢了 ' + t.name, 'compare');
@@ -470,15 +471,16 @@ function handleAction(socket, data) {
                     winner: room.currentPlayerIndex,
                     loser: target
                 });
-        
+
                 const active = getActivePlayers();
                 if (active.length <= 1) {
                     handleEndOfRound(active[0] || null);
                     return;
                 }
-        
+
                 p.justCompared = true;
-                broadcastState();
+                // 关键修复：敲牌赢了之后也要进入下一回合
+                nextTurn();
                 return;
             } else {
                 p.status = 'folded';
@@ -552,6 +554,12 @@ function forceShowdown() {
     const active = getActivePlayers();
     let winner = null;
     active.forEach(p => {
+        if (!p.handType) {
+            if (!p.cards || p.cards.length < 3) {
+                p.cards = p.allCards.slice(0, 3);
+            }
+            p.handType = evaluateHand(p.cards);
+        }
         if (!winner || compareHands(p.handType, winner.handType) > 0) winner = p;
     });
     if (winner) {
@@ -606,9 +614,8 @@ function getAvailableActions(player) {
     }
 
     const actions = ['fold'];
-    // 修改：如果已看牌但未选牌，只能选牌，不能进行其他操作
     if (player.hasLooked && !player.hasSelectedCards) {
-        return []; // 前端会根据hasSelectedCards显示选牌界面
+        return [];
     }
     if (!player.hasLooked) actions.push('look');
     actions.push('call');
@@ -619,12 +626,26 @@ function getAvailableActions(player) {
         if (active.length === 2) {
             const opp = active.find(p => p.id !== player.id);
             if (opp) {
-                // 修改：检查对方是否已选牌
-                if (opp.hasLooked && opp.hasSelectedCards) actions.push('compare');
-                else if (!opp.hasLooked && opp.headsUpBetCount >= 3) actions.push('compare');
+                // 修改：无论对方是否看牌，都可以敲牌
+                if (opp.hasLooked && opp.hasSelectedCards) {
+                    actions.push('compare');
+                } else if (!opp.hasLooked && opp.headsUpBetCount >= 3) {
+                    actions.push('compare');
+                } else if (!opp.hasLooked) {
+                    // 没看牌的对方也可以敲（暗牌敲牌）
+                    actions.push('compare');
+                }
             }
-        } else if (player.hasLooked && player.hasSelectedCards && active.some(p => p.id !== player.id && p.hasLooked && p.hasSelectedCards)) {
-            actions.push('compare');
+        } else {
+            if (player.hasLooked && player.hasSelectedCards) {
+                // 已看牌已选牌：可以敲任何其他玩家
+                const hasTarget = active.some(p => p.id !== player.id);
+                if (hasTarget) actions.push('compare');
+            } else if (!player.hasLooked) {
+                // 没看牌也可以敲（暗牌敲牌）
+                const hasTarget = active.some(p => p.id !== player.id);
+                if (hasTarget) actions.push('compare');
+            }
         }
     }
     return actions;
@@ -633,18 +654,21 @@ function getAvailableActions(player) {
 function getCompareTargets(player) {
     if (room.round < 2) return [];
     const active = getActivePlayers();
+
     if (active.length === 2) {
         const opp = active.find(p => p.id !== player.id);
         if (opp) {
-            // 修改：检查对方是否已选牌
             if (opp.hasLooked && opp.hasSelectedCards) return [room.players.indexOf(opp)];
             if (!opp.hasLooked && opp.headsUpBetCount >= 3) return [room.players.indexOf(opp)];
+            // 修改：没看牌也可以敲
+            if (!opp.hasLooked) return [room.players.indexOf(opp)];
         }
         return [];
     }
-    if (!player.hasLooked || !player.hasSelectedCards) return [];
-    // 修改：只返回已看牌且已选牌的玩家
-    return active.filter(p => p.id !== player.id && p.hasLooked && p.hasSelectedCards).map(p => room.players.indexOf(p));
+
+    // 修改：已看牌已选牌 或 没看牌，都可以敲其他活跃玩家
+    if (player.hasLooked && !player.hasSelectedCards) return [];
+    return active.filter(p => p.id !== player.id).map(p => room.players.indexOf(p));
 }
 
 function broadcastState() {
@@ -669,36 +693,26 @@ function buildStateForPlayer(viewer) {
         hostId: room.hostId,
         hostName: hostPlayer ? hostPlayer.name : '',
         players: room.players.map((p, i) => {
-            // 修改：显示逻辑
-            // 对于viewer自己：如果已看牌，显示allCards（5张）用于选择；如果已选牌，显示cards（3张）
-            // 对于其他玩家：如果已选牌，在游戏结束时显示cards（3张）和discardedCards（2张）
-            // 其他情况不显示牌
             let showCards = [];
             let showDiscarded = [];
             let showAllCards = false;
-            
+
             if (i === viewerIndex) {
-                // 自己
                 if (p.hasLooked && !p.hasSelectedCards) {
-                    // 看牌但未选牌：显示5张牌供选择
                     showCards = p.allCards;
                     showAllCards = true;
                 } else if (p.hasSelectedCards) {
-                    // 已选牌：显示选中的3张
                     showCards = p.cards;
                 }
             } else {
-                // 其他玩家
                 if (room.phase === 'gameover') {
-                    // 游戏结束：显示所有人的手牌和弃牌
                     showCards = p.cards;
                     showDiscarded = p.discardedCards;
                 } else if (p.hasSelectedCards) {
-                    // 游戏中，如果已选牌，显示弃牌（两张）
                     showDiscarded = p.discardedCards;
                 }
             }
-            
+
             return {
                 name: p.name,
                 chips: p.chips,
@@ -709,7 +723,7 @@ function buildStateForPlayer(viewer) {
                 baoxi: p.baoxi,
                 cards: showCards,
                 discardedCards: showDiscarded,
-                showAllCards: showAllCards, // 告知前端这是5张待选的牌
+                showAllCards: showAllCards,
                 handDesc: (showCards.length === 3 && p.handType) ? p.handType.desc : ''
             };
         }),
