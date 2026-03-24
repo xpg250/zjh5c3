@@ -12,7 +12,8 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 // ==================== 扑克牌逻辑 ====================
 
 const RANK_VALUES = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14 };
-const HAND_TYPES = { SINGLE:1, PAIR:2, STRAIGHT:3, FLUSH:4, STRAIGHT_FLUSH:5, THREE_OF_KIND:6 };
+// 【修改1】新增 MIXED_235 牌型，等级最低
+const HAND_TYPES = { MIXED_235:0, SINGLE:1, PAIR:2, STRAIGHT:3, FLUSH:4, STRAIGHT_FLUSH:5, THREE_OF_KIND:6 };
 function valueName(v) { return {2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'J',12:'Q',13:'K',14:'A'}[v]; }
 
 function createDeck() {
@@ -30,39 +31,89 @@ function shuffle(arr) {
     }
 }
 
+// 【修改2】evaluateHand：新增杂色235检测 + A23标记
 function evaluateHand(cards) {
     const values = cards.map(c => c.value).sort((a, b) => a - b);
     const suits = cards.map(c => c.suit);
     const isFlush = suits[0] === suits[1] && suits[1] === suits[2];
     const isThree = values[0] === values[1] && values[1] === values[2];
-    const isStraight = (values[1] === values[0]+1 && values[2] === values[1]+1) || (values[0]===2 && values[1]===3 && values[2]===14);
+    const isStraight = (values[1] === values[0]+1 && values[2] === values[1]+1) ||
+                       (values[0]===2 && values[1]===3 && values[2]===14);
 
+    // 豹子
     if (isThree) return { type: HAND_TYPES.THREE_OF_KIND, values, desc: '豹子' + valueName(values[0]) };
+
+    // 顺金
     if (isStraight && isFlush) return { type: HAND_TYPES.STRAIGHT_FLUSH, values, desc: '顺金' + valueName(values[2]) };
-    if (isStraight) return { type: HAND_TYPES.STRAIGHT, values, desc: '顺子' + valueName(values[2]) };
+
+    // 顺子（A23标记为最小顺子）
+    if (isStraight) {
+        const isA23 = (values[0]===2 && values[1]===3 && values[2]===14);
+        return {
+            type: HAND_TYPES.STRAIGHT,
+            values,
+            desc: isA23 ? '顺子A23（最小）' : '顺子' + valueName(values[2]),
+            lowStraight: isA23  // 标记A23为最小顺子
+        };
+    }
+
+    // 金花
     if (isFlush) return { type: HAND_TYPES.FLUSH, values, desc: '金花' + valueName(values[2]) };
 
+    // 【新增】杂色235（花色不全相同，点数为2、3、5）
+    const sortedRanks = cards.map(c => c.rank).sort();
+    const suitsSet = new Set(suits);
+    if (sortedRanks[0]==='2' && sortedRanks[1]==='3' && sortedRanks[2]==='5' && suitsSet.size > 1) {
+        return { type: HAND_TYPES.MIXED_235, values, desc: '杂色235' };
+    }
+
+    // 对子
     let pairValue = 0, kicker = 0;
     if (values[0] === values[1]) { pairValue = values[0]; kicker = values[2]; }
     else if (values[1] === values[2]) { pairValue = values[1]; kicker = values[0]; }
     else if (values[0] === values[2]) { pairValue = values[0]; kicker = values[1]; }
     if (pairValue) return { type: HAND_TYPES.PAIR, values, pairValue, kicker, desc: '对' + valueName(pairValue) };
 
+    // 单张
     return { type: HAND_TYPES.SINGLE, values, desc: '单张' + valueName(values[2]) };
 }
 
+// 【修改3】compareHands：处理杂色235 vs 豹子 + A23最小顺子
 function compareHands(h1, h2) {
+    // ===== 杂色235特殊规则 =====
+    if (h1.type === HAND_TYPES.MIXED_235 && h2.type === HAND_TYPES.THREE_OF_KIND) return 1;
+    if (h1.type === HAND_TYPES.THREE_OF_KIND && h2.type === HAND_TYPES.MIXED_235) return -1;
+    if (h1.type === HAND_TYPES.MIXED_235 && h2.type !== HAND_TYPES.MIXED_235) return -1;
+    if (h1.type !== HAND_TYPES.MIXED_235 && h2.type === HAND_TYPES.MIXED_235) return 1;
+    // 两个杂色235互相比 → 和局
+    if (h1.type === HAND_TYPES.MIXED_235 && h2.type === HAND_TYPES.MIXED_235) return 0;
+
+    // ===== 正常牌型比较 =====
     if (h1.type !== h2.type) return h1.type - h2.type;
+
+    // 对子
     if (h1.type === HAND_TYPES.PAIR) {
         if (h1.pairValue !== h2.pairValue) return h1.pairValue - h2.pairValue;
         return h1.kicker - h2.kicker;
     }
+
+    // 顺子特殊处理（A23是最小顺子）
+    if (h1.type === HAND_TYPES.STRAIGHT) {
+        const h1IsLow = h1.lowStraight === true;
+        const h2IsLow = h2.lowStraight === true;
+        if (h1IsLow && !h2IsLow) return -1;  // A23 vs 非A23 → A23输
+        if (!h1IsLow && h2IsLow) return 1;   // 非A23 vs A23 → A23输
+        if (h1IsLow && h2IsLow) return 0;    // 都是A23 → 和局
+        // 都不是A23，按最大牌比
+        const a = [...h1.values].sort((x,y) => y-x);
+        const b = [...h2.values].sort((x,y) => y-x);
+        for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] - b[i];
+        return 0;
+    }
+
+    // 豹子、金花、顺金、对子、单张：降序比较
     const a = [...h1.values].sort((x,y) => y-x);
     const b = [...h2.values].sort((x,y) => y-x);
-    const isA23 = v => v[0]===2 && v[1]===3 && v[2]===14;
-    const sa = [...h1.values].sort((x,y)=>x-y), sb = [...h2.values].sort((x,y)=>x-y);
-    if (isA23(sa) && !isA23(sb)) return -1;
-    if (!isA23(sa) && isA23(sb)) return 1;
     for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] - b[i];
     return 0;
 }
@@ -87,7 +138,6 @@ function createRoom() {
         hostId: null,
         dealerActedThisRound: false,
         compareLock: null,
-        // 记录何时进入两人局，用于判断"人数变为两人后跟注至少三次"
         becameHeadsUpAtRound: -1
     };
 }
@@ -289,7 +339,6 @@ function handleStartGame(socket) {
     room.currentPlayerIndex = nextActiveFrom(room.dealerIndex);
     collectAnte();
 
-    // 检查初始是否就是两人局
     if (getActivePlayers().length === 2) {
         room.becameHeadsUpAtRound = 1;
     }
@@ -340,7 +389,6 @@ function handleAction(socket, data) {
             return socket.emit('error_msg', '敲牌进行中，请等待...');
         }
 
-        // 参与者只允许 select_cards / fold
         if (action !== 'select_cards' && action !== 'fold') {
             if (isInitiator && !cl.initiatorWon) {
                 return socket.emit('error_msg', '请等待敲牌结果...');
@@ -415,13 +463,9 @@ function handleAction(socket, data) {
             broadcastState();
             return;
 
-        // ============ 关键修复：select_cards ============
         case 'select_cards': {
-            // 【修复1】已选牌检查
             if (p.hasSelectedCards) return socket.emit('error_msg', '你已经选过牌了');
 
-            // 【修复2】允许敲牌参与者（无论是否看牌）选牌
-            // 非敲牌参与者必须先看牌
             const isCompareParticipant = room.compareLock &&
                 (playerIdx === room.compareLock.initiator || playerIdx === room.compareLock.target);
             if (!p.hasLooked && !isCompareParticipant) {
@@ -445,7 +489,6 @@ function handleAction(socket, data) {
             p.hasSelectedCards = true;
             addLog(p.name, '选择了3张牌', 'select');
 
-            // 检查敲牌锁定：双方都选完牌则执行比较
             if (room.compareLock) {
                 const cl = room.compareLock;
                 const initiator = room.players[cl.initiator];
@@ -510,20 +553,17 @@ function handleAction(socket, data) {
             room.pot += amt;
             addLog(p.name, '向 ' + t.name + ' 发起敲牌', 'compare');
 
-            // 双方都已选牌 → 直接比较
             if (p.hasSelectedCards && t.hasSelectedCards) {
                 executeCompare(playerIdx, target);
                 return;
             }
 
-            // 设置敲牌锁定
             room.compareLock = {
                 initiator: playerIdx,
                 target: target,
                 initiatorWon: false
             };
 
-            // 给所有未选牌的参与者发送手牌（无论是否看过牌）
             if (!p.hasSelectedCards) {
                 socket.emit('your_cards', { cards: p.allCards });
             }
@@ -549,7 +589,6 @@ function handleAction(socket, data) {
     nextTurn();
 }
 
-// 执行敲牌比较
 function executeCompare(initiatorIdx, targetIdx) {
     const p = room.players[initiatorIdx];
     const t = room.players[targetIdx];
@@ -560,7 +599,6 @@ function executeCompare(initiatorIdx, targetIdx) {
         return;
     }
 
-    // 未选牌的玩家自动取前三张
     if (!p.hasSelectedCards) {
         p.cards = p.allCards.slice(0, 3);
         p.discardedCards = p.allCards.slice(3);
@@ -608,7 +646,6 @@ function nextTurn() {
 
     room.currentPlayerIndex = nextActiveFrom(room.currentPlayerIndex);
 
-    // 检测是否刚进入两人局
     if (getActivePlayers().length === 2 && room.becameHeadsUpAtRound === -1) {
         room.becameHeadsUpAtRound = room.round;
     }
@@ -704,18 +741,15 @@ function addLog(name, action, type) {
 
 // ==================== 状态广播 ====================
 
-// 【修复3】getAvailableActions：敲牌锁定参与者可 fold + select_cards
 function getAvailableActions(player) {
     if (!player || player.status !== 'active') return [];
 
-    // 敲牌锁定中
     if (room.compareLock) {
         const cl = room.compareLock;
         const pi = room.players.indexOf(player);
         if (pi === cl.initiator && cl.initiatorWon) {
             return ['fold', 'call'];
         }
-        // 参与者可弃牌和选牌
         if (pi === cl.initiator || pi === cl.target) {
             return ['fold', 'select_cards'];
         }
@@ -725,14 +759,12 @@ function getAvailableActions(player) {
     if (player.justCompared) return ['fold', 'call'];
 
     const actions = ['fold'];
-    // 已看牌未选牌 → 只能选牌
     if (player.hasLooked && !player.hasSelectedCards) return ['select_cards'];
 
     if (!player.hasLooked) actions.push('look');
     actions.push('call');
     if (!room.hasRaised) actions.push('raise');
 
-    // 敲牌：第2轮起
     if (room.round >= 2) {
         const active = getActivePlayers();
         if (canCompare(player, active)) actions.push('compare');
@@ -741,43 +773,31 @@ function getAvailableActions(player) {
     return actions;
 }
 
-// 【修复4】canCompare：细化两人局规则
 function canCompare(player, active) {
-    // 已看牌未选牌 → 不可敲
     if (player.hasLooked && !player.hasSelectedCards) return false;
 
     if (active.length === 2) {
         const opp = active.find(p => p.id !== player.id);
         if (!opp) return false;
 
-        // 情况①：两人都看了牌且都选了牌 → 可直接互敲
         if (player.hasLooked && player.hasSelectedCards && opp.hasLooked && opp.hasSelectedCards) {
             return true;
         }
-
-        // 情况②：只有一人看了牌
         if (player.hasLooked && player.hasSelectedCards && !opp.hasLooked) {
-            // 看牌玩家敲暗牌玩家：
-            // 必须在人数变为两人之后，暗牌玩家继续跟注至少三次（期间保持不看牌）
             if (room.becameHeadsUpAtRound > 0 && room.round > room.becameHeadsUpAtRound) {
                 return opp.headsUpBetCount >= 3;
             }
             return false;
         }
         if (!player.hasLooked && opp.hasLooked && opp.hasSelectedCards) {
-            // 暗牌玩家敲看牌玩家：随时可以
             return true;
         }
-
-        // 情况③：两人都没看牌
         if (!player.hasLooked && !opp.hasLooked) {
-            // 暗牌玩家敲暗牌玩家：跟注至少三次（期间保持不看牌）
             return opp.headsUpBetCount >= 3;
         }
         return false;
     }
 
-    // 3+人：已选牌玩家之间互敲
     if (player.hasSelectedCards) {
         return active.some(p => p.id !== player.id && p.hasSelectedCards);
     }
@@ -792,12 +812,9 @@ function getCompareTargets(player) {
         const opp = active.find(p => p.id !== player.id);
         if (!opp) return [];
 
-        // 情况①：两人都看了牌且都选了牌
         if (player.hasLooked && player.hasSelectedCards && opp.hasLooked && opp.hasSelectedCards) {
             return [room.players.indexOf(opp)];
         }
-
-        // 情况②：只有一人看了牌
         if (player.hasLooked && player.hasSelectedCards && !opp.hasLooked) {
             if (room.becameHeadsUpAtRound > 0 && room.round > room.becameHeadsUpAtRound && opp.headsUpBetCount >= 3) {
                 return [room.players.indexOf(opp)];
@@ -807,8 +824,6 @@ function getCompareTargets(player) {
         if (!player.hasLooked && opp.hasLooked && opp.hasSelectedCards) {
             return [room.players.indexOf(opp)];
         }
-
-        // 情况③：两人都没看牌
         if (!player.hasLooked && !opp.hasLooked) {
             if (opp.headsUpBetCount >= 3) return [room.players.indexOf(opp)];
             return [];
