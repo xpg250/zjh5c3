@@ -20,6 +20,7 @@
             background: var(--bg-primary);
             min-height: 100vh; overflow-x: hidden; user-select: none;
         }
+
         .join-screen {
             position: fixed; inset: 0;
             background: radial-gradient(ellipse at center, var(--bg-table) 0%, var(--bg-primary) 100%);
@@ -78,31 +79,40 @@
                              radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02) 0%, transparent 50%);
             pointer-events: none;
         }
+
         .top-bar {
             position: absolute; top: 0; left: 0; right: 0; height: 60px;
             background: rgba(0,0,0,0.4); display: flex; align-items: center;
             justify-content: space-between; padding: 0 20px; z-index: 100;
         }
-        .game-title { font-size: clamp(16px, 4vw, 22px); font-weight: 900; color: var(--accent-gold); text-shadow: 2px 2px 4px var(--shadow); }
+        .game-title {
+            font-size: clamp(16px, 4vw, 22px); font-weight: 900;
+            color: var(--accent-gold); text-shadow: 2px 2px 4px var(--shadow);
+        }
         .top-info { display: flex; gap: 15px; align-items: center; }
-        .info-item { font-size: clamp(12px, 2.5vw, 14px); color: var(--text-light); display: flex; align-items: center; gap: 6px; }
+        .info-item {
+            font-size: clamp(12px, 2.5vw, 14px); color: var(--text-light);
+            display: flex; align-items: center; gap: 6px;
+        }
         .info-value { font-size: clamp(14px, 3vw, 18px); font-weight: 700; color: var(--accent-gold); }
         .conn-status { font-size: 12px; color: var(--accent-green); margin-left: 10px; }
 
         .bottom-bar {
             position: absolute; bottom: 0; left: 0; right: 0;
-            background: rgba(0,0,0,0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(0,0,0,0.45); backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-top: 1px solid rgba(255,255,255,0.1);
             padding: 12px 16px; display: flex; align-items: center; justify-content: center;
             gap: 10px; z-index: 100; min-height: 85px; flex-wrap: wrap;
         }
+
         .action-btn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .action-btn {
             padding: 12px 22px; font-size: 15px; font-weight: 700;
             border: 2px solid transparent; border-radius: 10px;
             cursor: pointer; transition: all 0.25s ease;
             letter-spacing: 1px; font-family: 'Noto Sans SC', sans-serif;
-            min-width: 80px; text-align: center;
+            min-width: 80px; text-align: center; position: relative;
         }
         .btn-fold { background: var(--accent-red); color: white; }
         .btn-fold:not(:disabled):hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(231,76,60,0.5); border-color: rgba(255,255,255,0.3); }
@@ -118,9 +128,15 @@
             opacity: 0.35; cursor: not-allowed; filter: grayscale(0.6);
             transform: none !important; box-shadow: none !important; border-color: transparent !important;
         }
-        .action-reason { font-size: 10px; color: rgba(255,255,255,0.35); min-height: 14px; text-align: center; white-space: nowrap; }
+        .action-reason {
+            font-size: 10px; color: rgba(255,255,255,0.35);
+            min-height: 14px; text-align: center; white-space: nowrap;
+        }
 
-        .seat { position: absolute; display: flex; flex-direction: column; align-items: center; transition: all 0.3s ease; }
+        .seat {
+            position: absolute; display: flex; flex-direction: column;
+            align-items: center; transition: all 0.3s ease;
+        }
         .seat.active .player-info { box-shadow: 0 0 20px var(--accent-gold); }
         .seat-0 { bottom: 120px; left: 50%; transform: translateX(-50%); }
         .seat-1 { bottom: 240px; left: 5%; }
@@ -151,7 +167,7 @@
         .looked-badge {
             position: absolute; top: -10px; right: -10px;
             background: var(--accent-purple); color: white;
-            padding: 4px ; flex-direction:8px; border-radius: 12px;
+            padding: 4px 8px; border-radius: 12px;
             font-size: 11px; font-weight: 700; z-index: 10;
             box-shadow: 0 2px 8px rgba(155,89,182,0.5); animation: pulse 2s infinite; white-space: nowrap;
         }
@@ -169,6 +185,7 @@
             font-size: 11px; font-weight: 700; z-index: 10;
             box-shadow: 0 2px 8px rgba(26,188,156,0.5); animation: pulse 2s infinite; white-space: nowrap;
         }
+
         @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
 
         .player-name { font-size: 14px; font-weight: 700; color: var(--text-light); margin-bottom: 5px; }
@@ -179,7 +196,7 @@
         .player-status { font-size: 12px; color: var(--accent-orange); margin-top: 5px; min-height: 18px; }
         .bet-info { font-size: 11px; color: var(--accent-purple); margin-top: 3px; min-height: 14px; }
 
-        .cards-container { display: flex; gap: 8px; margin-top: 10px; justify-content: center; }
+        .cards-container { display: flex; gap: 8px; margin-top: 10px; justify-content: center; position: relative; }
         .card {
             width: 60px; height: 84px; background: var(--card-white);
             border-radius: 8px; display: flex; flex-direction: column;
@@ -190,15 +207,54 @@
         .card:hover { transform: translateY(-5px); }
         .card.red { color: #e74c3c !important; }
         .card.black { color: #2c3e50 !important; }
-        .card-back { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); position: relative; overflow: hidden; }
-        .card-back::before { content: ''; position: absolute; inset: 5px; border: 2px solid rgba(255,255,255,0.2); border-radius: 4px; }
+        .card-back {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            position: relative; overflow: hidden;
+        }
+        .card-back::before {
+            content: ''; position: absolute; inset: 5px;
+            border: 2px solid rgba(255,255,255,0.2); border-radius: 4px;
+        }
         .card-back::after { content: '♠'; font-size: 24px; color: rgba(255,255,255,0.3); }
-        .card-front { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        .card-front {
+            display: none; flex-direction: column; align-items: center;
+            justify-content: center; width: 100%; height: 100%;
+        }
         .card.flipped .card-back { display: none !important; }
         .card.flipped .card-front { display: flex !important; }
         .card-rank { font-size: 22px; line-height: 1; font-weight: 700; }
         .card-suit { font-size: 26px; line-height: 1; }
-        .card-small { position: absolute; top: 4px; left: 6px; font-size: 11px; display: flex column; align-items;
+        .card-small {
+            position: absolute; top: 4px; left: 6px; font-size: 11px;
+            display: flex; flex-direction: column; align-items: center; line-height: 1;
+        }
+        .card-small .card-suit { font-size: 10px; }
+
+        .discarded-cards-container { display: flex; gap: 4px; margin-top: 5px; justify-content: center; }
+        .discarded-card {
+            width: 30px; height: 42px; background: rgba(255,255,255,0.2);
+            border-radius: 4px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-weight: 700; box-shadow: 0 2px 4px var(--shadow); position: relative;
+        }
+        .discarded-card .card-rank { font-size: 12px; }
+        .discarded-card .card-suit { font-size: 14px; }
+        .discarded-card.red { color: #e74c3c !important; }
+        .discarded-card.black { color: #2c3e50 !important; }
+        .discarded-label { font-size: 9px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+        .select-cards-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; align-items: center; justify-content: center;
+            z-index: 500; flex-direction: column; gap: 20px;
+        }
+        .select-cards-overlay.show { display: flex; }
+        .select-cards-title { font-size: 22px; font-weight: 700; color: var(--text-light); margin-bottom: 10px; }
+        .select-cards-instruction { font-size: 16px; color: var(--text-light); opacity: 0.8; margin-bottom: 20px; }
+        .select-cards-container { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; max-width: 90vw; }
+        .select-card {
+            width: 80px; height: 112px; background: var(--card-white);
+            border-radius: 10px; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             font-weight: 700; box-shadow: 0 6px 12px var(--shadow);
             cursor: pointer; transition: all 0.2s ease;
@@ -222,8 +278,15 @@
         .select-confirm-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(39,174,96,0.5); }
         .select-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        .message-area { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 200; pointer-events: none; }
-        .game-message { font-size: 28px; font-weight: 900; color: var(--accent-gold); text-shadow: 2px 2px 8px var(--shadow); opacity: 0; transition: opacity 0.4s ease; }
+        .message-area {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; z-index: 200; pointer-events: none;
+        }
+        .game-message {
+            font-size: 28px; font-weight: 900; color: var(--accent-gold);
+            text-shadow: 2px 2px 8px var(--shadow);
+            opacity: 0; transition: opacity 0.4s ease;
+        }
         .game-message.show { opacity: 1; }
 
         .round-indicator {
@@ -231,6 +294,7 @@
             background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 20px;
             color: var(--text-light); font-weight: 700; font-size: 14px; white-space: nowrap;
         }
+
         .action-log-panel {
             position: absolute; top: 70px; right: 20px;
             background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px;
@@ -255,9 +319,15 @@
         .log-action.select { color: var(--accent-green); }
         .log-round { font-size: 11px; color: rgba(255,255,255,0.5); margin-left: 5px; }
 
-        .compare-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 500; }
+        .compare-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; align-items: center; justify-content: center; z-index: 500;
+        }
         .compare-modal.show { display: flex; }
-        .compare8px; min-content { background: var(--bg-secondary); padding: 30px; border-radius: 16px; text-align: center; max-width: 90vw; }
+        .compare-content {
+            background: var(--bg-secondary); padding: 30px;
+            border-radius: 16px; text-align: center; max-width: 90vw;
+        }
         .compare-title { font-size: 22px; font-weight: 700; color: var(--text-light); margin-bottom: 20px; }
         .compare-options { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
         .compare-option {
@@ -284,6 +354,7 @@
         }
         .restart-btn:hover { transform: translate(-50%, -50%) translateY(-2px); box-shadow: 0 8px 30px rgba(39,174,96,0.5); }
         .restart-btn.hidden { display: none; }
+
         .waiting-host-msg {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             padding: 14px 40px; font-size: 18px; font-weight: 700;
@@ -292,9 +363,20 @@
         }
         .waiting-host-msg.hidden { display: none; }
 
+        @keyframes dealCard { 0%{transform:translateY(-200px) rotate(-20deg);opacity:0} 100%{transform:translateY(0) rotate(0);opacity:1} }
+        .card.dealing { animation: dealCard 0.4s ease forwards; }
         @keyframes flipCard { 0%{transform:rotateY(0deg)} 50%{transform:rotateY(90deg)} 100%{transform:rotateY(0deg)} }
         .card.flipping { animation: flipCard 0.5s ease; }
+        @keyframes winPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+        .winner-anim { animation: winPulse 0.5s ease 3; }
 
+        @media (max-width: 1024px) {
+            .seat-1 { bottom: 220px; left: 3%; }
+            .seat-5 { bottom: 220px; right: 3%; }
+            .seat-2 { bottom: 320px; left: 10%; }
+            .seat-4 { bottom: 320px; right: 10%; }
+            .action-log-panel { width: 180px; }
+        }
         @media (max-width: 768px) {
             .card { width: 45px; height: 63px; }
             .card-rank { font-size: 14px; }
@@ -310,7 +392,94 @@
             .player-info { padding: 8px 12px; min-width: 90px; }
             .player-name { font-size: 12px; }
             .player-chips { font-size: 16px; }
-            .dealer-badge { top: -8px; left: --width: 1="info-item"><span>总底池:</span><span class="info-value" id="potAmount">0</span></div>
+            .dealer-badge { top: -8px; left: -8px; min-width: 18px; height: 18px; font-size: 9px; padding: 0 4px; border-radius: 9px; }
+            .looked-badge { top: -8px; right: -8px; font-size: 9px; padding: 2px 5px; border-radius: 9px; }
+            .baoxi-badge { top: -8px; left: -8px; font-size: 9px; padding: 2px 5px; border-radius: 9px; }
+            .compare-lock-badge { top: -8px; right: -8px; font-size: 9px; padding: 2px 5px; border-radius: 9px; }
+            .bottom-bar { gap: 8px; padding: 10px 12px; min-height: 80px; }
+            .action-btn { padding: 10px 16px; font-size: 13px; min-width: 65px; }
+            .action-reason { font-size: 9px; }
+            .action-log-panel { display: none; }
+            .top-bar { padding: 0 15px; height: 50px; }
+            .round-indicator { top: 60px; font-size: 12px; padding: 6px 15px; }
+            .game-message { font-size: 22px; }
+            .waiting-host-msg { font-size: 15px; padding: 12px 20px; }
+            .select-card { width: 60px; height: 84px; }
+            .select-card .card-rank { font-size: 20px; }
+            .select-card .card-suit { font-size: 24px; }
+            .select-card .card-small { font-size: 10px; }
+            .select-card .card-small .card-suit { font-size: 8px; }
+            .select-cards-title { font-size: 18px; }
+            .select-cards-instruction { font-size: 14px; }
+        }
+        @media (max-width: 480px) {
+            .card { width: 35px; height: 49px; }
+            .card-rank { font-size: 11px; }
+            .card-suit { font-size: 14px; }
+            .card-small { display: none; }
+            .player-info { padding: 5px 8px; min-width: 70px; border-radius: 8px; }
+            .player-name { font-size: 10px; margin-bottom: 3px; }
+            .player-chips { font-size: 13px; }
+            .player-status { font-size: 9px; margin-top: 3px; }
+            .bet-info { font-size: 8px; margin-top: 2px; }
+            .dealer-badge { top: -6px; left: -6px; min-width: 14px; height: 14px; font-size: 7px; padding: 0 3px; border-radius: 7px; }
+            .looked-badge { top: -6px; right: -6px; font-size: 7px; padding: 2px 4px; border-radius: 7px; }
+            .baoxi-badge { top: -6px; left: -6px; font-size: 7px; padding: 2px 4px; border-radius: 7px; }
+            .compare-lock-badge { top: -6px; right: -6px; font-size: 7px; padding: 2px 4px; border-radius: 7px; }
+            .seat-0 { bottom: 85px; left: 50%; transform: translateX(-50%); }
+            .seat-3 { top: 55px; left: 50%; transform: translateX(-50%); }
+            .seat-1 { bottom: 42%; left: 2%; }
+            .seat-2 { bottom: 62%; left: 5%; }
+            .seat-5 { bottom: 42%; right: 2%; }
+            .seat-4 { bottom: 62%; right: 5%; }
+            .bottom-bar { gap: 5px; padding: 8px 6px; min-height: 70px; flex-wrap: nowrap; overflow-x: auto; }
+            .action-btn { padding: 8px 10px; font-size: 11px; min-width: 50px; letter-spacing: 0; }
+            .action-reason { font-size: 7px; }
+            .waiting-host-msg { font-size: 12px; padding: 8px 12px; }
+            .round-indicator { font-size: 10px; padding: 5px 12px; top: 52px; }
+            .game-message { font-size: 18px; }
+            .top-bar { height: 45px; padding: 0 10px; }
+            .game-title { font-size: 14px; }
+            .info-item { font-size: 10px; }
+            .info-value { font-size: 12px; }
+            .discarded-cards-container { gap: 2px; margin-top: 3px; }
+            .discarded-card { width: 20px; height: 28px; }
+            .discarded-card .card-rank { font-size: 8px; }
+            .discarded-card .card-suit { font-size: 10px; }
+            .discarded-label { font-size: 7px; }
+            .select-card { width: 50px; height: 70px; }
+            .select-card .card-rank { font-size: 16px; }
+            .select-card .card-suit { font-size: 20px; }
+            .select-card .card-small { display: none; }
+            .select-cards-title { font-size: 16px; }
+            .select-cards-instruction { font-size: 12px; }
+            .select-confirm-btn { padding: 10px 30px; font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="join-screen" id="joinScreen">
+        <div class="join-title">炸金花</div>
+        <div class="join-form">
+            <input type="text" class="join-input" id="nameInput" placeholder="输入昵称" maxlength="8" autocomplete="off">
+            <button class="join-btn" id="joinBtn">加入房间</button>
+        </div>
+        <div class="join-status" id="joinStatus"></div>
+        <div class="waiting-list" id="waitingList" style="display:none;">
+            <div class="waiting-title">等待玩家中...</div>
+            <div class="waiting-players" id="waitingPlayers"></div>
+            <button class="start-game-btn hidden" id="startBtn">开始游戏</button>
+        </div>
+    </div>
+
+    <div class="game-container hidden" id="gameContainer">
+        <div class="table-texture"></div>
+        <div class="top-bar">
+            <div class="game-title">炸金花 <span class="conn-status" id="connStatus">● 已连接</span></div>
+            <div class="top-info">
+                <div class="info-item"><span>底注:</span><span class="info-value" id="baseBetDisplay">5</span></div>
+                <div class="info-item"><span>总底池:</span><span class="info-value" id="potAmount">0</span></div>
             </div>
         </div>
         <div class="round-indicator" id="roundIndicator">等待开始</div>
@@ -395,7 +564,7 @@
         </div>
 
         <div class="select-cards-overlay" id="selectCardsOverlay">
-            <div class="select-cards-title" id="selectCardsTitle">选择你的手牌</div>
+            <div class="select-cards-title">选择你的手牌</div>
             <div class="select-cards-instruction" id="selectCardsInstruction">请从以下5张牌中选择3张作为你的手牌</div>
             <div class="select-cards-container" id="selectCardsContainer"></div>
             <button class="select-confirm-btn" id="selectConfirmBtn" disabled>确认选择</button>
@@ -412,7 +581,6 @@
         var hostName = '';
         var isHost = false;
         var selectedCardIndices = [];
-        var lastCardsReceived = null;
 
         var $ = function(id) { return document.getElementById(id); };
         var joinScreen    = $('joinScreen');
@@ -431,7 +599,6 @@
         var selectCardsOverlay = $('selectCardsOverlay');
         var selectCardsContainer = $('selectCardsContainer');
         var selectConfirmBtn = $('selectConfirmBtn');
-        var selectCardsTitle = $('selectCardsTitle');
         var selectCardsInstruction = $('selectCardsInstruction');
 
         joinBtn.onclick = doJoin;
@@ -443,7 +610,11 @@
             joinBtn.disabled = true;
             joinStatus.textContent = '连接中（首次可能需要等待约30秒）...';
 
-            socket = io({ reconnection: true, reconnectionDelay: 2000, reconnectionAttempts: 10 });
+            socket = io({
+                reconnection: true,
+                reconnectionDelay: 2000,
+                reconnectionAttempts: 10
+            });
             setupSocketEvents();
 
             socket.on('connect', function() {
@@ -480,6 +651,7 @@
                 });
                 if (data.players.length >= 2 && isHost) startBtn.classList.remove('hidden');
                 else startBtn.classList.add('hidden');
+
                 if (!gameContainer.classList.contains('hidden') && gameState && gameState.phase === 'gameover') {
                     updateWaitingHostDisplay();
                 }
@@ -511,9 +683,6 @@
                 if (state.hostName) hostName = state.hostName;
                 renderState(state);
 
-                // 检测是否需要弹出选牌界面
-                checkAndShowSelectCards(state);
-
                 if (state.phase === 'gameover') {
                     if (msgTimer) { /* wait */ }
                     else updateWaitingHostDisplay();
@@ -531,8 +700,7 @@
             });
 
             socket.on('your_cards', function(data) {
-                lastCardsReceived = data.cards;
-                showSelectCardsUI(data.cards);
+                showSelectCardsUI(data.cards, false);
             });
 
             socket.on('compare_result', function(data) {
@@ -554,8 +722,13 @@
                 socket.emit('start_game');
             };
 
-            socket.on('log', function(data) { addLogEntry(data.name, data.action, data.type, data.round); });
-            socket.on('error_msg', function(msg) { showMessage(msg); });
+            socket.on('log', function(data) {
+                addLogEntry(data.name, data.action, data.type, data.round);
+            });
+
+            socket.on('error_msg', function(msg) {
+                showMessage(msg);
+            });
 
             socket.on('disconnect', function() {
                 $('connStatus').textContent = '● 已断开';
@@ -581,33 +754,11 @@
             }
         }
 
-        // 检测是否需要弹出选牌界面
-        function checkAndShowSelectCards(state) {
-            if (selectCardsOverlay.classList.contains('show')) return;
-
-            var myPlayer = state.players[state.myIndex];
-            if (!myPlayer) return;
-
-            if (myPlayer.hasLooked && !myPlayer.hasSelectedCards) {
-                if (lastCardsReceived && lastCardsReceived.length === 5) {
-                    showSelectCardsUI(lastCardsReceived);
-                }
-            }
-        }
-
-        function showSelectCardsUI(cards) {
-            lastCardsReceived = cards;
+        function showSelectCardsUI(cards, isCompareSelect) {
             selectCardsContainer.innerHTML = '';
             selectedCardIndices = [];
 
-            // 判断是否敲牌选牌
-            var isCompare = gameState && gameState.compareLock;
-            var myPlayer = gameState ? gameState.players[gameState.myIndex] : null;
-            var isCompareParticipant = isCompare && myPlayer &&
-                (gameState.myIndex === gameState.compareLock.initiatorIndex ||
-                 gameState.myIndex === gameState.compareLock.targetIndex);
-
-            if (isCompareParticipant) {
+            if (isCompareSelect) {
                 selectCardsTitle.textContent = '敲牌 - 选择你的手牌';
                 selectCardsInstruction.textContent = '敲牌进行中，请从以下5张牌中选择3张作为手牌进行比牌';
             } else {
@@ -712,6 +863,7 @@
             chipsEl.classList.add(player.chips > 0 ? 'positive' : player.chips < 0 ? 'negative' : 'zero');
 
             $('status' + index).textContent = player.status === 'folded' ? '已弃牌' : '';
+
             var betText = '';
             if (player.bet > 0) betText = '下注: ' + player.bet;
             $('betInfo' + index).textContent = betText;
@@ -719,6 +871,7 @@
             info.classList.toggle('folded', player.status === 'folded');
             info.classList.toggle('has-looked', player.hasLooked);
 
+            // 清除旧徽章
             var oldBadge = info.querySelector('.dealer-badge');
             if (oldBadge) oldBadge.remove();
             info.classList.remove('dealer');
@@ -732,7 +885,7 @@
 
             var isDealer = index === state.dealerIndex;
             var isBaoxi = !!player.baoxi;
-            var isInCompare = cl && (index === cl.initiatorIndex || index === cl.targetIndex) && !cl.initiatorWon;
+            var isInCompare = cl && (index === cl.initiatorIndex || index === cl.targetIndex);
 
             if (isDealer) {
                 info.classList.add('dealer');
@@ -754,7 +907,7 @@
                 info.appendChild(lookedBadge);
             }
 
-            if (isInCompare) {
+            if (isInCompare && !cl.initiatorWon) {
                 info.classList.add('compare-locked');
                 var cmpBadge = document.createElement('div');
                 cmpBadge.className = 'compare-lock-badge';
@@ -798,20 +951,26 @@
         function renderDiscardedCardsForPlayer(index, player, state) {
             var container = $('discarded' + index);
             container.innerHTML = '';
+
             if (player.discardedCards && player.discardedCards.length === 2) {
                 var label = document.createElement('div');
                 label.className = 'discarded-label';
                 label.textContent = '弃牌';
                 container.appendChild(label);
+
                 var cardsDiv = document.createElement('div');
                 cardsDiv.className = 'discarded-cards-container';
+
                 player.discardedCards.forEach(function(card) {
                     var isRed = card.suit === '♥' || card.suit === '♦';
                     var cardEl = document.createElement('div');
                     cardEl.className = 'discarded-card ' + (isRed ? 'red' : 'black');
-                    cardEl.innerHTML = '<span class="card-rank">' + card.rank + '</span><span class="card-suit">' + card.suit + '</span>';
+                    cardEl.innerHTML =
+                        '<span class="card-rank">' + card.rank + '</span>' +
+                        '<span class="card-suit">' + card.suit + '</span>';
                     cardsDiv.appendChild(cardEl);
                 });
+
                 container.appendChild(cardsDiv);
             }
         }
@@ -837,7 +996,6 @@
             });
         }
 
-        // ==================== 关键修复: renderBottomBar ====================
         function renderBottomBar(state) {
             bottomBar.innerHTML = '';
 
@@ -852,19 +1010,20 @@
             var callAmount = hasLooked ? baseBet * 2 : baseBet;
             var raiseAmount = hasLooked ? baseBet * 4 : baseBet * 2;
 
-            // 关键修复: isMyTurn 不再依赖 availableActions.length
             var isMyTurn = false;
             var isCompareLockParticipant = false;
             var isInitiatorWon = false;
 
             if (cl) {
+                // 敲牌锁定中
                 isCompareLockParticipant = (state.myIndex === cl.initiatorIndex || state.myIndex === cl.targetIndex);
                 isInitiatorWon = cl.initiatorWon && state.myIndex === cl.initiatorIndex;
-                isMyTurn = isInitiatorWon;
+                // 锁定中发起者赢了后 = 轮到他
+                isMyTurn = isInitiatorWon || (isCompareLockParticipant && !cl.initiatorWon);
             } else {
                 isMyTurn = state.phase === 'playing' &&
                            state.currentPlayerIndex === state.myIndex &&
-                           myPlayer && myPlayer.status === 'active';
+                           available.length > 0;
             }
 
             var canFold    = available.indexOf('fold') !== -1;
@@ -879,18 +1038,18 @@
             var raiseReason = '';
             var compareReason = '';
 
-            if (cl && !isInitiatorWon) {
-                // 敲牌锁定中，非发起者赢的状态
+            if (cl) {
                 if (!isCompareLockParticipant) {
                     foldReason = '敲牌进行中';
                     callReason = '敲牌进行中';
-                    lookReason = '敲牌进行中';
-                    raiseReason = '敲牌进行中';
-                    compareReason = '敲牌进行中';
+                } else if (isInitiatorWon) {
+                    // 发起者赢了，可以 fold/call
+                    lookReason = '已结束';
+                    raiseReason = '敲牌后不可加注';
+                    compareReason = '不可连续敲牌';
                 } else {
-                    // 参与者: 只能选牌或弃牌(通过选牌界面)
-                    foldReason = '请选牌或弃牌';
-                    callReason = '请先选牌';
+                    // 等待选牌
+                    callReason = '请先选牌或弃牌';
                     lookReason = hasLooked ? '已看牌' : '请先选牌';
                     raiseReason = '敲牌进行中';
                     compareReason = '敲牌进行中';
@@ -898,9 +1057,7 @@
             } else {
                 if (!isMyTurn) {
                     foldReason = '等待回合';
-                    lookReason = hasLooked ? '已处关键修改
-
-看牌' : '等待回合';
+                    lookReason = hasLooked ? '已看牌' : '等待回合';
                     callReason = '等待回合';
                     raiseReason = '等待回合';
                     compareReason = '等待回合';
@@ -990,15 +1147,22 @@
             var m = $('gameMessage');
             clearTimeout(msgTimer);
             m.classList.remove('show');
+
             requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
                     m.textContent = text;
                     m.classList.add('show');
+
                     msgCallback = callback || null;
+
                     msgTimer = setTimeout(function() {
                         m.classList.remove('show');
                         setTimeout(function() {
-                            if (msgCallback) { var cb = msgCallback; msgCallback = null; cb(); }
+                            if (msgCallback) {
+                                var cb = msgCallback;
+                                msgCallback = null;
+                                cb();
+                            }
                         }, 450);
                     }, 2500);
                 });
