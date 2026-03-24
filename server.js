@@ -414,12 +414,12 @@ function handleAction(socket, data) {
             p.hasLooked = true;
             addLog(p.name, '看牌', 'look');
             io.to(ROOM_ID).emit('player_looked', { playerIndex: playerIdx });
+            // 修改：看牌后立即发送手牌给玩家，触发选牌界面
             socket.emit('your_cards', { cards: p.allCards });
             broadcastState();
             return;
 
         case 'select_cards': {
-            if (!p.hasLooked) return socket.emit('error_msg', '请先看牌');
             if (p.hasSelectedCards) return socket.emit('error_msg', '你已经选过牌了');
             if (!selectedIndices || selectedIndices.length !== 3) return socket.emit('error_msg', '请选择3张牌');
             for (const idx of selectedIndices) {
@@ -516,11 +516,11 @@ function handleAction(socket, data) {
                 initiatorWon: false
             };
 
-            // 给未选牌的已看牌玩家发手牌
-            if (p.hasLooked && !p.hasSelectedCards) {
+            // 修改：给双方中所有未选牌的玩家发送手牌（无论是否看牌）
+            if (!p.hasSelectedCards) {
                 socket.emit('your_cards', { cards: p.allCards });
             }
-            if (t.hasLooked && !t.hasSelectedCards) {
+            if (!t.hasSelectedCards) {
                 const tSocket = [...io.sockets.sockets.values()].find(s => s.id === t.id);
                 if (tSocket) tSocket.emit('your_cards', { cards: t.allCards });
             }
@@ -553,22 +553,12 @@ function executeCompare(initiatorIdx, targetIdx) {
         return;
     }
 
-    // 暗牌玩家自动取前三张
-    if (!p.handType) {
-        if (!p.cards || p.cards.length < 3) {
-            p.cards = p.allCards.slice(0, 3);
-            p.discardedCards = p.allCards.slice(3);
-        }
-        p.handType = evaluateHand(p.cards);
-        p.hasSelectedCards = true;
-    }
-    if (!t.handType) {
-        if (!t.cards || t.cards.length < 3) {
-            t.cards = t.allCards.slice(0, 3);
-            t.discardedCards = t.allCards.slice(3);
-        }
-        t.handType = evaluateHand(t.cards);
-        t.hasSelectedCards = true;
+    // 修改：不再自动为未选牌玩家分配手牌，而是检查双方是否都已选牌
+    if (!p.hasSelectedCards || !t.hasSelectedCards) {
+        // 如果有一方未选牌，不应执行比较，保持锁定状态
+        addLog('系统', '等待双方完成选牌', 'compare');
+        broadcastState();
+        return;
     }
 
     const result = compareHands(p.handType, t.handType);
@@ -726,8 +716,11 @@ function getAvailableActions(player) {
     if (player.justCompared) return ['fold', 'call'];
 
     const actions = ['fold'];
-    // 已看牌未选牌 → 只能选牌
-    if (player.hasLooked && !player.hasSelectedCards) return [];
+    // 修改：已看牌未选牌 → 提供“选牌”操作（通过触发 your_cards 事件实现）
+    if (player.hasLooked && !player.hasSelectedCards) {
+        // 客户端会将此动作转换为显示选牌界面
+        return ['select_cards_ui'];
+    }
 
     if (!player.hasLooked) actions.push('look');
     actions.push('call');
