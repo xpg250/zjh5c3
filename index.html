@@ -564,7 +564,7 @@
         </div>
 
         <div class="select-cards-overlay" id="selectCardsOverlay">
-            <div class="select-cards-title">选择你的手牌</div>
+            <div class="select-cards-title" id="selectCardsTitle">选择你的手牌</div>
             <div class="select-cards-instruction" id="selectCardsInstruction">请从以下5张牌中选择3张作为你的手牌</div>
             <div class="select-cards-container" id="selectCardsContainer"></div>
             <button class="select-confirm-btn" id="selectConfirmBtn" disabled>确认选择</button>
@@ -600,6 +600,7 @@
         var selectCardsContainer = $('selectCardsContainer');
         var selectConfirmBtn = $('selectConfirmBtn');
         var selectCardsInstruction = $('selectCardsInstruction');
+        var selectCardsTitle = $('selectCardsTitle');
 
         joinBtn.onclick = doJoin;
         nameInput.onkeydown = function(e) { if (e.key === 'Enter') doJoin(); };
@@ -700,7 +701,10 @@
             });
 
             socket.on('your_cards', function(data) {
-                showSelectCardsUI(data.cards, false);
+                // 根据上下文判断是普通看牌选牌还是敲牌选牌
+                var isCompareSelect = gameState && gameState.compareLock &&
+                    (myIndex === gameState.compareLock.initiatorIndex || myIndex === gameState.compareLock.targetIndex);
+                showSelectCardsUI(data.cards, isCompareSelect);
             });
 
             socket.on('compare_result', function(data) {
@@ -1031,15 +1035,12 @@
             var canCall    = available.indexOf('call') !== -1;
             var canRaise   = available.indexOf('raise') !== -1;
             var canCompare = available.indexOf('compare') !== -1;
-            // 新增：检查是否需要显示“选牌”按钮
-            var canSelectCardsUI = available.indexOf('select_cards_ui') !== -1;
 
             var foldReason = '';
             var lookReason = '';
             var callReason = '';
             var raiseReason = '';
             var compareReason = '';
-            var selectCardsReason = '';
 
             if (cl) {
                 if (!isCompareLockParticipant) {
@@ -1064,10 +1065,8 @@
                     callReason = '等待回合';
                     raiseReason = '等待回合';
                     compareReason = '等待回合';
-                    selectCardsReason = '等待回合';
                 } else {
                     if (hasLooked && !hasSelectedCards) {
-                        // 已看牌未选牌时，禁用其他操作，只允许选牌
                         callReason = '请先选牌';
                         raiseReason = '请先选牌';
                         compareReason = '请先选牌';
@@ -1086,21 +1085,6 @@
                 { label: '敲牌 ' + callAmount, cls: 'btn-compare', enabled: isMyTurn && canCompare, reason: compareReason }
             ];
 
-            // 如果需要显示“选牌”按钮（已看牌未选牌），则替换或添加
-            if (canSelectCardsUI) {
-                // 移除其他可能冲突的按钮理由
-                buttons = [
-                    { label: '弃牌', cls: 'btn-fold', enabled: isMyTurn, reason: '' },
-                    { label: '选择手牌', cls: 'btn-look', enabled: true, reason: '请从5张牌中选择3张' } // 复用看牌按钮样式
-                ];
-                // 修改点击行为：点击“选择手牌”触发显示选牌界面
-                buttons[1].customAction = function() {
-                    if (myPlayer && myPlayer.allCards && myPlayer.allCards.length === 5) {
-                        showSelectCardsUI(myPlayer.allCards, false);
-                    }
-                };
-            }
-
             buttons.forEach(function(cfg) {
                 var wrapper = document.createElement('div');
                 wrapper.className = 'action-btn-wrapper';
@@ -1111,9 +1095,7 @@
                 btn.disabled = !cfg.enabled;
 
                 if (cfg.enabled) {
-                    if (cfg.customAction) {
-                        btn.onclick = cfg.customAction;
-                    } else if (cfg.cls === 'btn-compare') {
+                    if (cfg.cls === 'btn-compare') {
                         if (compareTargets.length > 1) {
                             btn.onclick = function() { showCompareModal(compareTargets); };
                         } else if (compareTargets.length === 1) {
