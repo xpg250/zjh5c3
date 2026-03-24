@@ -281,7 +281,6 @@
         }
         .card-small .card-suit { font-size: 10px; }
 
-        /* 新增：弃牌区域样式 */
         .discarded-cards-container {
             display: flex; gap: 4px; margin-top: 5px;
             justify-content: center;
@@ -469,7 +468,7 @@
         @keyframes winPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
         .winner-anim { animation: winPulse 0.5s ease 3; }
 
-        /* ==================== 响应式 - 平板 ==================== */
+        /* ==================== 响应式 ==================== */
         @media (max-width: 1024px) {
             .seat-1 { bottom: 220px; left: 3%; }
             .seat-5 { bottom: 220px; right: 3%; }
@@ -478,7 +477,6 @@
             .action-log-panel { width: 180px; }
         }
 
-        /* ==================== 响应式 - 手机横屏/中等屏幕 ==================== */
         @media (max-width: 768px) {
             .card { width: 45px; height: 63px; }
             .card-rank { font-size: 14px; }
@@ -510,8 +508,7 @@
             .round-indicator { top: 60px; font-size: 12px; padding: 6px 15px; }
             .game-message { font-size: 22px; }
             .waiting-host-msg { font-size: 15px; padding: 12px 20px; }
-            
-            /* 选牌界面响应式 */
+
             .select-card { width: 60px; height: 84px; }
             .select-card .card-rank { font-size: 20px; }
             .select-card .card-suit { font-size: 24px; }
@@ -521,78 +518,38 @@
             .select-cards-instruction { font-size: 14px; }
         }
 
-        /* ==================== 响应式 - 手机竖屏（重点修改） ==================== */
         @media (max-width: 480px) {
-            /* 扑克牌尺寸进一步缩小 */
             .card { width: 35px; height: 49px; }
             .card-rank { font-size: 11px; }
             .card-suit { font-size: 14px; }
             .card-small { display: none; }
 
-            /* 玩家信息框紧凑化 */
             .player-info { padding: 5px 8px; min-width: 70px; border-radius: 8px; }
             .player-name { font-size: 10px; margin-bottom: 3px; }
             .player-chips { font-size: 13px; }
             .player-status { font-size: 9px; margin-top: 3px; }
             .bet-info { font-size: 8px; margin-top: 2px; }
 
-            /* 徽章尺寸缩小 */
             .dealer-badge { top: -6px; left: -6px; min-width: 14px; height: 14px; font-size: 7px; padding: 0 3px; border-radius: 7px; }
             .looked-badge { top: -6px; right: -6px; font-size: 7px; padding: 2px 4px; border-radius: 7px; }
             .baoxi-badge { top: -6px; left: -6px; font-size: 7px; padding: 2px 4px; border-radius: 7px; }
 
-            /* ========== 座位布局 - 充分利用纵向空间 ========== */
-            /* seat-0: 自己在底部中间 */
-            .seat-0 {
-                bottom: 85px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
+            .seat-0 { bottom: 85px; left: 50%; transform: translateX(-50%); }
+            .seat-3 { top: 55px; left: 50%; transform: translateX(-50%); }
+            .seat-1 { bottom: 42%; left: 2%; }
+            .seat-2 { bottom: 62%; left: 5%; }
+            .seat-5 { bottom: 42%; right: 2%; }
+            .seat-4 { bottom: 62%; right: 5%; }
 
-            /* seat-3: 对面玩家在顶部 */
-            .seat-3 {
-                top: 55px;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-
-            /* 左侧玩家：从下往上分布，增大间距 */
-            .seat-1 {
-                bottom: 42%;  /* 使用百分比更灵活 */
-                left: 2%;
-            }
-            .seat-2 {
-                bottom: 62%;  /* 与seat-1保持20%的间距 */
-                left: 5%;
-            }
-
-            /* 右侧玩家：从下往上分布，增大间距 */
-            .seat-5 {
-                bottom: 42%;  /* 与seat-1对称 */
-                right: 2%;
-            }
-            .seat-4 {
-                bottom: 62%;  /* 与seat-2对称，与seat-5保持20%的间距 */
-                right: 5%;
-            }
-
-            /* 底部操作栏 */
             .bottom-bar {
-                gap: 5px;
-                padding: 8px 6px;
-                min-height: 70px;
-                flex-wrap: nowrap;
-                overflow-x: auto;
+                gap: 5px; padding: 8px 6px; min-height: 70px;
+                flex-wrap: nowrap; overflow-x: auto;
             }
             .action-btn {
-                padding: 8px 10px;
-                font-size: 11px;
-                min-width: 50px;
-                letter-spacing: 0;
+                padding: 8px 10px; font-size: 11px; min-width: 50px; letter-spacing: 0;
             }
             .action-reason { font-size: 7px; }
 
-            /* 其他元素调整 */
             .waiting-host-msg { font-size: 12px; padding: 8px 12px; }
             .round-indicator { font-size: 10px; padding: 5px 12px; top: 52px; }
             .game-message { font-size: 18px; }
@@ -600,15 +557,13 @@
             .game-title { font-size: 14px; }
             .info-item { font-size: 10px; }
             .info-value { font-size: 12px; }
-            
-            /* 弃牌区域响应式 */
+
             .discarded-cards-container { gap: 2px; margin-top: 3px; }
             .discarded-card { width: 20px; height: 28px; }
             .discarded-card .card-rank { font-size: 8px; }
             .discarded-card .card-suit { font-size: 10px; }
             .discarded-label { font-size: 7px; }
-            
-            /* 选牌界面响应式 */
+
             .select-card { width: 50px; height: 70px; }
             .select-card .card-rank { font-size: 16px; }
             .select-card .card-suit { font-size: 20px; }
@@ -618,40 +573,31 @@
             .select-confirm-btn { padding: 10px 30px; font-size: 16px; }
         }
 
-        /* ==================== 超长屏幕优化（如2670*1200竖屏） ==================== */
         @media (max-width: 480px) and (min-height: 800px) {
-            /* 高屏幕可以给更多空间 */
             .seat-0 { bottom: 95px; }
             .seat-3 { top: 65px; }
-
             .seat-1 { bottom: 38%; }
             .seat-2 { bottom: 56%; }
             .seat-4 { bottom: 56%; }
             .seat-5 { bottom: 38%; }
-
             .player-info { padding: 6px 10px; min-width: 75px; }
             .player-name { font-size: 11px; }
             .player-chips { font-size: 14px; }
-
             .card { width: 38px; height: 53px; }
             .card-rank { font-size: 12px; }
             .card-suit { font-size: 15px; }
         }
 
         @media (max-width: 480px) and (min-height: 1000px) {
-            /* 超高屏幕更多空间 */
             .seat-0 { bottom: 100px; }
             .seat-3 { top: 75px; }
-
             .seat-1 { bottom: 35%; }
             .seat-2 { bottom: 52%; }
             .seat-4 { bottom: 52%; }
             .seat-5 { bottom: 35%; }
-
             .player-info { padding: 7px 11px; min-width: 80px; }
             .player-name { font-size: 11px; }
             .player-chips { font-size: 15px; }
-
             .card { width: 40px; height: 56px; }
             .card-rank { font-size: 13px; }
             .card-suit { font-size: 16px; }
@@ -660,42 +606,32 @@
         }
 
         @media (max-width: 480px) and (min-height: 1400px) {
-            /* 极高屏幕（如折叠屏展开）最大空间利用 */
             .seat-0 { bottom: 110px; }
             .seat-3 { top: 85px; }
-
             .seat-1 { bottom: 32%; }
             .seat-2 { bottom: 50%; }
             .seat-4 { bottom: 50%; }
             .seat-5 { bottom: 32%; }
-
             .player-info { padding: 8px 12px; min-width: 90px; border-radius: 10px; }
             .player-name { font-size: 12px; }
             .player-chips { font-size: 16px; }
             .player-status { font-size: 10px; }
             .bet-info { font-size: 9px; }
-
             .card { width: 45px; height: 63px; }
             .card-rank { font-size: 14px; }
             .card-suit { font-size: 18px; }
             .card-small { display: block; font-size: 9px; }
             .card-small .card-suit { font-size: 8px; }
-
             .bottom-bar { min-height: 80px; padding: 10px 10px; }
             .action-btn { padding: 10px 14px; font-size: 12px; min-width: 58px; }
-            
-            /* 弃牌区域 */
             .discarded-card { width: 25px; height: 35px; }
             .discarded-card .card-rank { font-size: 10px; }
             .discarded-card .card-suit { font-size: 12px; }
-            
-            /* 选牌界面 */
             .select-card { width: 55px; height: 77px; }
             .select-card .card-rank { font-size: 18px; }
             .select-card .card-suit { font-size: 22px; }
         }
 
-        /* ==================== 横屏超高屏适配 ==================== */
         @media (max-height: 500px) and (orientation: landscape) {
             .seat-0 { bottom: 85px; }
             .seat-1 { bottom: 130px; left: 1%; }
@@ -705,7 +641,6 @@
             .seat-3 { top: 55px; }
             .bottom-bar { min-height: 70px; padding: 8px 12px; }
             .action-btn { padding: 8px 16px; font-size: 13px; }
-
             .dealer-badge { top: -7px; left: -7px; min-width: 17px; height: 17px; font-size: 9px; padding: 0 4px; border-radius: 9px; }
             .looked-badge { top: -7px; right: -7px; font-size: 9px; padding: 2px 5px; border-radius: 9px; }
             .baoxi-badge { top: -7px; left: -7px; font-size: 9px; padding: 2px 5px; border-radius: 9px; }
@@ -817,8 +752,7 @@
                 <button class="compare-cancel" id="compareCancel">取消</button>
             </div>
         </div>
-        
-        <!-- 新增：选牌界面 -->
+
         <div class="select-cards-overlay" id="selectCardsOverlay">
             <div class="select-cards-title">选择你的手牌</div>
             <div class="select-cards-instruction">请从以下5张牌中选择3张作为你的手牌</div>
@@ -836,7 +770,8 @@
         var mySocketId = null;
         var hostName = '';
         var isHost = false;
-        var selectedCardIndices = []; // 用于存储选中的牌索引
+        var selectedCardIndices = [];
+        var pendingCompareInfo = null;
 
         var $ = function(id) { return document.getElementById(id); };
         var joinScreen    = $('joinScreen');
@@ -901,9 +836,7 @@
                     waitingPlayers.appendChild(div);
                     if (p.isHost) {
                         hostName = p.name;
-                        if (p.name === nameInput.value.trim()) {
-                            isHost = true;
-                        }
+                        if (p.name === nameInput.value.trim()) isHost = true;
                     }
                 });
                 if (data.players.length >= 2 && isHost) startBtn.classList.remove('hidden');
@@ -917,8 +850,6 @@
             socket.on('host_changed', function(data) {
                 hostName = data.newHostName;
                 isHost = (data.newHostId === mySocketId);
-                console.log('房主变更为: ' + hostName);
-
                 if (!gameContainer.classList.contains('hidden') && gameState && gameState.phase === 'gameover') {
                     updateWaitingHostDisplay();
                 }
@@ -932,27 +863,21 @@
                 restartBtn.classList.add('hidden');
                 waitingHostMsg.classList.add('hidden');
                 selectCardsOverlay.classList.remove('show');
+                pendingCompareInfo = null;
                 clearLog();
                 addLogEntry('系统', '游戏开始！', 'call', 0);
             });
 
             socket.on('state_update', function(state) {
                 gameState = state;
-                if (state.hostId && mySocketId) {
-                    isHost = (state.hostId === mySocketId);
-                }
-                if (state.hostName) {
-                    hostName = state.hostName;
-                }
-            
+                if (state.hostId && mySocketId) isHost = (state.hostId === mySocketId);
+                if (state.hostName) hostName = state.hostName;
                 renderState(state);
-            
+
                 if (state.phase === 'gameover') {
-                    if (msgTimer) {
-                        // 如果有定时器（即showMessage正在运行），则等待其完成
-                    } else {
-                        updateWaitingHostDisplay();
-                    }
+                    pendingCompareInfo = null;
+                    if (msgTimer) { /* wait for showMessage to finish */ }
+                    else updateWaitingHostDisplay();
                 } else {
                     restartBtn.classList.add('hidden');
                     waitingHostMsg.classList.add('hidden');
@@ -960,30 +885,50 @@
             });
 
             socket.on('player_looked', function(data) {
-                if (data.playerIndex !== myIndex) {
-                    flipOtherCards(data.playerIndex);
-                }
+                if (data.playerIndex !== myIndex) flipOtherCards(data.playerIndex);
                 if (gameState && gameState.players[data.playerIndex]) {
                     showMessage(gameState.players[data.playerIndex].name + ' 看了牌');
                 }
             });
 
             socket.on('your_cards', function(data) {
-                // 收到自己的5张牌，显示选牌界面
                 showSelectCardsUI(data.cards);
+            });
+
+            // ===== 新增：处理敲牌等待选牌事件 =====
+            socket.on('compare_pending', function(data) {
+                pendingCompareInfo = data;
+                var iAmInitiator = (data.initiatorIndex === myIndex);
+                var iAmTarget = (data.targetIndex === myIndex);
+
+                if (iAmInitiator && !data.initiatorSelected) {
+                    // 我是发起者且未选牌，等待 your_cards 事件触发选牌界面
+                    showMessage('请先选择3张手牌');
+                } else if (iAmTarget && !data.targetSelected) {
+                    // 我是被敲者且未选牌，等待 your_cards 事件触发选牌界面
+                    showMessage('对方发起敲牌，请选择3张手牌');
+                } else if (iAmInitiator && data.initiatorSelected && !data.targetSelected) {
+                    var targetName = gameState && gameState.players[data.targetIndex]
+                        ? gameState.players[data.targetIndex].name : '对方';
+                    showMessage('等待 ' + targetName + ' 选牌...');
+                } else if (iAmTarget && data.targetSelected && !data.initiatorSelected) {
+                    var initName = gameState && gameState.players[data.initiatorIndex]
+                        ? gameState.players[data.initiatorIndex].name : '对方';
+                    showMessage('等待 ' + initName + ' 选牌...');
+                }
             });
 
             socket.on('compare_result', function(data) {
                 var wName = gameState ? gameState.players[data.winner].name : '?';
                 var lName = gameState ? gameState.players[data.loser].name : '?';
+                pendingCompareInfo = null;
                 showMessage(wName + ' 敲牌赢了 ' + lName + '！');
             });
 
             socket.on('game_over', function(data) {
+                pendingCompareInfo = null;
                 showMessage(data.winnerName + ' 赢了 ' + data.pot, function() {
-                    if (gameState && gameState.phase === 'gameover') {
-                        updateWaitingHostDisplay();
-                    }
+                    if (gameState && gameState.phase === 'gameover') updateWaitingHostDisplay();
                 });
                 addLogEntry(data.winnerName, '赢得 ' + data.pot + '（' + data.handDesc + '）', 'call', 0);
             });
@@ -999,10 +944,9 @@
             });
 
             socket.on('error_msg', function(msg) {
-                showMessage(msg, function() {
-                    // 错误消息处理
-                });
+                showMessage(msg);
             });
+
             socket.on('disconnect', function() {
                 $('connStatus').textContent = '● 已断开';
                 $('connStatus').style.color = '#e74c3c';
@@ -1027,26 +971,25 @@
             }
         }
 
-        // 新增：显示选牌界面
         function showSelectCardsUI(cards) {
             selectCardsContainer.innerHTML = '';
             selectedCardIndices = [];
-            
+
             cards.forEach(function(card, index) {
                 var cardEl = document.createElement('div');
                 var isRed = card.suit === '♥' || card.suit === '♦';
                 cardEl.className = 'select-card ' + (isRed ? 'red' : 'black');
-                cardEl.innerHTML = 
+                cardEl.innerHTML =
                     '<div class="card-small"><span>' + card.rank + '</span><span class="card-suit">' + card.suit + '</span></div>' +
                     '<span class="card-rank">' + card.rank + '</span>' +
                     '<span class="card-suit">' + card.suit + '</span>';
                 cardEl.dataset.index = index;
-                
+
                 cardEl.onclick = function() {
                     var idx = parseInt(this.dataset.index);
                     if (this.classList.contains('selected')) {
                         this.classList.remove('selected');
-                        selectedCardIndices = selectedCardIndices.filter(i => i !== idx);
+                        selectedCardIndices = selectedCardIndices.filter(function(i) { return i !== idx; });
                     } else {
                         if (selectedCardIndices.length >= 3) {
                             showMessage('最多只能选择3张牌');
@@ -1057,21 +1000,21 @@
                     }
                     selectConfirmBtn.disabled = selectedCardIndices.length !== 3;
                 };
-                
+
                 selectCardsContainer.appendChild(cardEl);
             });
-            
+
             selectConfirmBtn.disabled = true;
             selectConfirmBtn.onclick = function() {
                 if (selectedCardIndices.length === 3) {
-                    socket.emit('action', { 
-                        action: 'select_cards', 
-                        selectedIndices: selectedCardIndices 
+                    socket.emit('action', {
+                        action: 'select_cards',
+                        selectedIndices: selectedCardIndices
                     });
                     selectCardsOverlay.classList.remove('show');
                 }
             };
-            
+
             selectCardsOverlay.classList.add('show');
         }
 
@@ -1103,19 +1046,6 @@
                 $('seat' + state.currentPlayerIndex).classList.add('active');
 
             renderBottomBar(state);
-            
-            // 如果当前是自己的回合，已看牌但未选牌，且选牌界面未显示，则显示选牌界面
-            var myPlayer = state.players[state.myIndex];
-            if (state.phase === 'playing' && 
-                state.currentPlayerIndex === state.myIndex && 
-                myPlayer && 
-                myPlayer.hasLooked && 
-                !myPlayer.hasSelectedCards &&
-                !selectCardsOverlay.classList.contains('show')) {
-                // 这种情况通常由your_cards事件触发，但为了处理重连等情况，这里也检查
-                // 注意：这里无法获取5张牌的具体内容，所以依赖于服务器发送your_cards事件
-                // 如果重连时服务器没有重新发送your_cards，可能需要额外的逻辑
-            }
         }
 
         function renderPlayerSlot(index, player, state) {
@@ -1180,25 +1110,20 @@
         function renderCardsForPlayer(index, player, state) {
             var container = $('cards' + index);
             container.innerHTML = '';
-            
-            // 如果玩家有最终选择的3张牌，显示它们
+
             if (player.cards && player.cards.length === 3) {
                 player.cards.forEach(function(card) {
                     var cardEl = createCardElement(card);
                     if (player.status === 'folded') cardEl.style.opacity = '0.5';
                     container.appendChild(cardEl);
                 });
-            } 
-            // 如果玩家正在看牌（showAllCards为true），显示5张牌
-            else if (player.showAllCards && player.cards && player.cards.length === 5) {
+            } else if (player.showAllCards && player.cards && player.cards.length === 5) {
                 player.cards.forEach(function(card) {
                     var cardEl = createCardElement(card);
                     if (player.status === 'folded') cardEl.style.opacity = '0.5';
                     container.appendChild(cardEl);
                 });
-            }
-            // 否则显示牌背
-            else {
+            } else {
                 if (player.status !== 'folded' || state.phase === 'playing') {
                     for (var i = 0; i < 3; i++) {
                         var cardEl = document.createElement('div');
@@ -1209,30 +1134,29 @@
             }
         }
 
-        // 新增：渲染弃牌（未选择的2张牌）
         function renderDiscardedCardsForPlayer(index, player, state) {
             var container = $('discarded' + index);
             container.innerHTML = '';
-            
+
             if (player.discardedCards && player.discardedCards.length === 2) {
                 var label = document.createElement('div');
                 label.className = 'discarded-label';
                 label.textContent = '弃牌';
                 container.appendChild(label);
-                
+
                 var cardsDiv = document.createElement('div');
                 cardsDiv.className = 'discarded-cards-container';
-                
+
                 player.discardedCards.forEach(function(card) {
                     var isRed = card.suit === '♥' || card.suit === '♦';
                     var cardEl = document.createElement('div');
                     cardEl.className = 'discarded-card ' + (isRed ? 'red' : 'black');
-                    cardEl.innerHTML = 
+                    cardEl.innerHTML =
                         '<span class="card-rank">' + card.rank + '</span>' +
                         '<span class="card-suit">' + card.suit + '</span>';
                     cardsDiv.appendChild(cardEl);
                 });
-                
+
                 container.appendChild(cardsDiv);
             }
         }
@@ -1248,47 +1172,12 @@
             return cardEl;
         }
 
-        function flipMyCards(playerIndex, cards) {
-            var container = $('cards' + playerIndex);
-            var cardEls = container.querySelectorAll('.card');
-
-            if (cardEls.length === 0) {
-                container.innerHTML = '';
-                cards.forEach(function(card) {
-                    var el = document.createElement('div');
-                    el.className = 'card card-back';
-                    container.appendChild(el);
-                });
-                cardEls = container.querySelectorAll('.card');
-            }
-
-            cardEls.forEach(function(cardEl, idx) {
-                if (idx >= cards.length) return;
-                var card = cards[idx];
-                var isRed = card.suit === '♥' || card.suit === '♦';
-
-                setTimeout(function() {
-                    cardEl.classList.add('flipping');
-                    setTimeout(function() {
-                        cardEl.classList.remove('card-back', 'flipping');
-                        cardEl.classList.add('flipped', isRed ? 'red' : 'black');
-                        cardEl.innerHTML = '<div class="card-front">' +
-                            '<div class="card-small"><span>' + card.rank + '</span><span class="card-suit">' + card.suit + '</span></div>' +
-                            '<span class="card-rank">' + card.rank + '</span>' +
-                            '<span class="card-suit">' + card.suit + '</span></div>';
-                    }, 250);
-                }, idx * 150);
-            });
-        }
-
         function flipOtherCards(playerIndex) {
             var cardEls = $('cards' + playerIndex).querySelectorAll('.card');
             cardEls.forEach(function(cardEl, idx) {
                 setTimeout(function() {
                     cardEl.classList.add('flipping');
-                    setTimeout(function() {
-                        cardEl.classList.remove('flipping');
-                    }, 500);
+                    setTimeout(function() { cardEl.classList.remove('flipping'); }, 500);
                 }, idx * 150);
             });
         }
@@ -1316,6 +1205,18 @@
             var canRaise   = available.indexOf('raise') !== -1;
             var canCompare = available.indexOf('compare') !== -1;
 
+            // 判断是否在等待对方选牌（敲牌进行中）
+            var waitingForTargetSelect = false;
+            if (pendingCompareInfo && isMyTurn) {
+                var iAmInit = (pendingCompareInfo.initiatorIndex === state.myIndex);
+                var iAmTarg = (pendingCompareInfo.targetIndex === state.myIndex);
+                if (iAmInit && hasSelectedCards && !pendingCompareInfo.targetSelected) {
+                    waitingForTargetSelect = true;
+                } else if (iAmTarg && hasSelectedCards && !pendingCompareInfo.initiatorSelected) {
+                    waitingForTargetSelect = true;
+                }
+            }
+
             var buttons = [
                 {
                     label: '弃牌',
@@ -1333,7 +1234,7 @@
                     label: '跟注 ' + callAmount,
                     cls: 'btn-call',
                     enabled: isMyTurn && canCall,
-                    reason: !isMyTurn ? '等待回合' : 
+                    reason: !isMyTurn ? '等待回合' :
                             (hasLooked && !hasSelectedCards ? '请先选牌' : '')
                 },
                 {
@@ -1341,7 +1242,7 @@
                     cls: 'btn-raise',
                     enabled: isMyTurn && canRaise,
                     reason: !isMyTurn ? '等待回合' :
-                            (state.hasRaised ? '已加注' : 
+                            (state.hasRaised ? '已加注' :
                             (hasLooked && !hasSelectedCards ? '请先选牌' : ''))
                 },
                 {
@@ -1350,8 +1251,9 @@
                     enabled: isMyTurn && canCompare,
                     reason: !isMyTurn ? '等待回合' :
                             (state.round < 2 ? '第2轮可用' :
-                            (!hasLooked ? '需先看牌' : 
-                            (!hasSelectedCards ? '请先选牌' : '')))
+                            (hasLooked && !hasSelectedCards ? '请先选牌' :
+                            (waitingForTargetSelect ? '等待对方选牌' :
+                            (!canCompare && hasSelectedCards ? '暂无可敲目标' : ''))))
                 }
             ];
 
