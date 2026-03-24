@@ -351,18 +351,29 @@ function handleStartGame(socket) {
     addLog('系统', '游戏开始，每人下底注' + INITIAL_BASE_BET + '元');
 }
 
+// 修正后的 collectAnte 函数，实现规则第三条
 function collectAnte() {
     if (room.huoxiPlayerId >= 0 && room.huoxiPlayerId < room.players.length) {
+        // 获喜玩家支付所有玩家的底注
         const hp = room.players[room.huoxiPlayerId];
         if (hp) {
             const total = INITIAL_BASE_BET * room.players.length;
             hp.chips -= total;
+            hp.bet = total; // 获喜玩家的bet设置为总底注
             room.pot += total;
-            room.players.forEach(p => { p.bet = INITIAL_BASE_BET; });
+
+            // 其他玩家不支付底注，bet设置为0
+            room.players.forEach(p => {
+                if (p !== hp) {
+                    p.bet = 0;
+                }
+            });
+
             addLog(hp.name, '支付所有底注' + total + '元', 'huoxi');
         }
         room.huoxiPlayerId = -1;
     } else {
+        // 常规情况：所有玩家支付底注
         room.huoxiPlayerId = -1;
         room.players.forEach(p => {
             p.chips -= INITIAL_BASE_BET;
